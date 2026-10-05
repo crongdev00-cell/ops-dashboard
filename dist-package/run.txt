@@ -1,0 +1,10 @@
+@echo off
+echo Test package v0.03
+echo [1/3] Preparing server...
+cd /d "%~dp0app"
+echo [2/3] Starting server. (Keep this window open - closing it stops the app.)
+start "" http://localhost:4000
+echo [3/3] Your browser should open automatically. If not, go to http://localhost:4000
+echo.
+"%~dp0node\node.exe" server.js
+pause

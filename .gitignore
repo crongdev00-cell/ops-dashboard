@@ -1,0 +1,12 @@
+.env
+node_modules/
+client/node_modules/
+client/dist/
+dist-package/app/node_modules/
+dist-package/app/client/dist/
+dist-package/node/
+*.zip
+_verify*/
+_gen_*.mjs
+large_test.xlsx
+.playwright-mcp/
