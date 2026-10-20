@@ -21,7 +21,7 @@ function excelSerialToIso(n) {
   return isNaN(d) ? null : d.toISOString().slice(0, 10)
 }
 
-function normalizeDate(value) {
+export function normalizeDate(value) {
   if (value === null || value === undefined || value === '') return null
   if (value instanceof Date) return value.toISOString().slice(0, 10)
   if (typeof value === 'number') return excelSerialToIso(value)

@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react'
-import { computeStage } from '../lib/stage'
+import { computeStage, CFT_DEPT_FIELDS } from '../lib/stage'
 import { OUR_DIVISION, NOT_APPLICABLE } from '../lib/businessDivision'
 
 const DataContext = createContext(null)
@@ -40,7 +40,7 @@ export function isCftOverdue(record, todayIso = new Date().toISOString().slice(0
   // 더 이상 심의 대상이 아닌데 옛 날짜 때문에 CFT 지연으로 계속 잡히면 안 된다.
   const stageCode = computeStage(record).code
   if (stageCode === 'N' || stageCode === 'NA' || stageCode === 'U') return false
-  if (!record.cftRequest || record.sysManage) return false
+  if (!record.cftRequest || CFT_DEPT_FIELDS.every((f) => record[f.key])) return false
   const days = Math.round((new Date(todayIso) - new Date(record.cftRequest)) / 86400000)
   return days >= CFT_SLA_DAYS
 }
@@ -68,6 +68,8 @@ export function DataProvider({ children }) {
   const [syncing, setSyncing] = useState(false)
   const [syncError, setSyncError] = useState(null)
   const [lastSync, setLastSync] = useState(null)
+  const [migrating, setMigrating] = useState(false)
+  const [migrateError, setMigrateError] = useState(null)
   // 같은 레코드에 연속으로 PUT을 보낼 때, 먼저 보낸 요청의 응답이 나중에 도착해서
   // 더 최근 수정을 덮어쓰는 걸 막기 위한 레코드별 버전 카운터.
   const patchVersionRef = useRef(new Map())
@@ -204,6 +206,46 @@ export function DataProvider({ children }) {
     }
   }
 
+  const syncGovPortalFile = async (file) => {
+    setSyncing(true)
+    setSyncError(null)
+    try {
+      const result = await api('/api/projects/sync-gov', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/octet-stream' },
+        body: file,
+      })
+      setRecords(result.records)
+      setLastSync({ ...result.summary, at: new Date(), fileName: file.name })
+      return result.summary
+    } catch (err) {
+      setSyncError(`국책사업 동기화 실패: ${err.message}`)
+      throw err
+    } finally {
+      setSyncing(false)
+    }
+  }
+
+  const migrateLegacyFile = async (file) => {
+    setMigrating(true)
+    setMigrateError(null)
+    try {
+      const result = await api('/api/projects/migrate-legacy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/octet-stream' },
+        body: file,
+      })
+      setRecords(result.records)
+      await refreshHistory()
+      return result.summary
+    } catch (err) {
+      setMigrateError(`레거시 데이터 업로드 실패: ${err.message}`)
+      throw err
+    } finally {
+      setMigrating(false)
+    }
+  }
+
   const saveCurrentFilter = (name) => setSavedFilters((prev) => [...prev, { id: `${Date.now()}`, name, filters }])
   const applySavedFilter = (id) => {
     const found = savedFilters.find((f) => f.id === id)
@@ -264,10 +306,11 @@ export function DataProvider({ children }) {
       selectedIds, toggleSelect, clearSelection,
       filters, setFilters, depts, pms,
       savedFilters, saveCurrentFilter, applySavedFilter, deleteSavedFilter,
-      syncing, syncError, lastSync, syncPortalFile, refreshAll,
+      syncing, syncError, lastSync, syncPortalFile, syncGovPortalFile, refreshAll,
+      migrating, migrateError, migrateLegacyFile,
     }),
     [records, activeRecords, divisionScopedRecords, visibleRecords, loading, loadError, selectedId, history, comments,
-      selectedIds, filters, depts, pms, savedFilters, syncing, syncError, lastSync]
+      selectedIds, filters, depts, pms, savedFilters, syncing, syncError, lastSync, migrating, migrateError]
   )
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>

@@ -7,6 +7,7 @@ import OverdueBanner from './components/OverdueBanner'
 import CftOverdueBanner from './components/CftOverdueBanner'
 import ActivityLogPanel from './components/ActivityLogPanel'
 import PortalSyncButton from './components/PortalSyncButton'
+import LegacyUploadButton from './components/LegacyUploadButton'
 import FlashButton from './components/common/FlashButton'
 import AddRecordModal from './components/AddRecordModal'
 import RecordModal from './components/common/RecordModal'
@@ -91,6 +92,7 @@ function Shell() {
               <Plus size={13} /> 안건 추가
             </FlashButton>
             <PortalSyncButton />
+            <LegacyUploadButton />
             <FlashButton onClick={() => setLogOpen(true)} className="flex items-center gap-1.5 rounded-lg border border-line bg-paper px-3 py-1.5 text-xs text-slate hover:bg-line/40">
               <History size={13} /> 변경 이력{history.length > 0 && ` (${history.length})`}
             </FlashButton>

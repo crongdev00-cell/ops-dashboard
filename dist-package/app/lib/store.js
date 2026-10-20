@@ -1,7 +1,11 @@
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
-import { classifyReviewMethod } from './classify.js'
+import { classifyReviewMethod, FACE_TO_FACE_DEFAULT } from './classify.js'
+
+const FACE_TO_FACE_SONCHUNGGEUM = '대면보고(부문장)'
+// 구 엑셀 심의방법 값 중 이미 신규 스키마 값 그대로인 것들 — 이 값들은 그대로 받아들인다.
+const LEGACY_REVIEW_METHOD_PASSTHROUGH = new Set(['미실시', '대상아님', '서면보고', FACE_TO_FACE_SONCHUNGGEUM, FACE_TO_FACE_DEFAULT])
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const DATA_DIR = process.env.OPS_DATA_DIR || path.join(__dirname, '..', 'data') // 테스트가 실데이터를 건드리지 않도록 오버라이드 가능
@@ -12,12 +16,22 @@ const COMMENTS_FILE = path.join(DATA_DIR, 'comments.json')
 // 팀이 이 웹앱에서 직접 관리하는 필드. 포털 동기화는 이 필드들을 절대 건드리지 않는다.
 export const TEAM_FIELDS = [
   'businessDivision', 'pm', 'pmDeptName', 'note', 'reviewMethod', 'chair', 'reviewDate', 'reviewResult', 'reviewContent',
-  'pmRequest', 'pmDue', 'pmComplete', 'cftRequest', 'sysManage', 'notice', 'approval',
+  'pmRequest', 'pmDue', 'pmComplete', 'cftRequest',
+  'cftAi', 'cftSwTest', 'cftPurchase', 'cftQuality', 'cftCostAnalysis', 'cftMns', 'cftSystemEng', 'cftBizMgmt',
+  'notice', 'approval',
   'isSonchunggeum', 'classificationConfirmed',
 ]
+// [유관부서(CFT)] 검토현황 — 8개 부서가 전부 완료돼야 다음 단계(검토완료)로 넘어간다. computeStage()에서도 이 목록을 쓴다.
+export const CFT_DEPT_FIELDS = ['cftAi', 'cftSwTest', 'cftPurchase', 'cftQuality', 'cftCostAnalysis', 'cftMns', 'cftSystemEng', 'cftBizMgmt']
 // 포털 동기화가 갱신하는 필드.
 export const PORTAL_FIELDS = [
   'contractName', 'contractOrg', 'contractMethod', 'appliedBusiness', 'businessType', 'deptName', 'bm', 'contractDate', 'dueDate', 'amount',
+]
+// 국책사업 전용 포털 업로드가 갱신하는 필드. 계약번호 기반 PORTAL_FIELDS와는 별개 — syncGovPortal만 건드린다.
+export const GOV_FIELDS = [
+  'contractOrg', 'deptName', 'contractDate', 'dueDate', 'amount',
+  'govFundAmount', 'privateCashAmount', 'privateInKindAmount', 'privateTotalAmount',
+  'govManager', 'govStage', 'govStatus', 'settlementType', 'participationType',
 ]
 
 // missing(파일이 아예 없음)과 corrupt(있는데 깨짐)를 구분한다 — 이 둘을 같은 값으로 취급하면
@@ -61,6 +75,8 @@ export function seedProjects(records) {
   projects = records.map((r, i) => ({
     id: i + 1,
     portalKey: null,
+    govKey: null,
+    projectType: '사업',
     excluded: false,
     isNew: false,
     createdAt: now,
@@ -94,12 +110,16 @@ export function createProject(data) {
   const now = new Date().toISOString()
   const rec = {
     id: nextId++,
-    portalKey: null, excluded: false, isNew: false,
+    portalKey: null, govKey: null, projectType: '사업', excluded: false, isNew: false,
     contractName: '', deptName: null, bm: null, contractOrg: null, contractMethod: null,
     appliedBusiness: null, businessType: null, contractDate: null, dueDate: null, amount: null,
+    govFundAmount: null, privateCashAmount: null, privateInKindAmount: null, privateTotalAmount: null,
+    govManager: null, govStage: null, govStatus: null, settlementType: null, participationType: null,
     businessDivision: '미래전장사업부문',
     pm: null, pmDeptName: null, note: null, reviewMethod: '미지정', chair: null, reviewDate: null, reviewResult: null, reviewContent: null,
-    pmRequest: null, pmDue: null, pmComplete: null, cftRequest: null, sysManage: null, notice: null, approval: null,
+    pmRequest: null, pmDue: null, pmComplete: null, cftRequest: null,
+    cftAi: null, cftSwTest: null, cftPurchase: null, cftQuality: null, cftCostAnalysis: null, cftMns: null, cftSystemEng: null, cftBizMgmt: null,
+    notice: null, approval: null,
     // 수기로 직접 만든 안건은 자동판정 대상이 아니라서(포털 데이터가 없음) 확정할 것도 없다 —
     // "심의 대상 확정 필요" 목록에 안 뜨도록 처음부터 확정된 것으로 둔다.
     autoClassification: null, classificationReason: null, classificationConfirmed: true, isSonchunggeum: false,
@@ -197,11 +217,15 @@ export function syncPortal(portalRows) {
       const newRecord = {
         id: nextId++,
         portalKey: row.portalKey,
+        govKey: null,
+        projectType: '사업',
         excluded: false,
         isNew: true,
         businessDivision: null,
         pm: null, pmDeptName: null, note: null, reviewMethod: '미지정', chair: null, reviewDate: null, reviewResult: null, reviewContent: null,
-        pmRequest: null, pmDue: null, pmComplete: null, cftRequest: null, sysManage: null, notice: null, approval: null,
+        pmRequest: null, pmDue: null, pmComplete: null, cftRequest: null,
+        cftAi: null, cftSwTest: null, cftPurchase: null, cftQuality: null, cftCostAnalysis: null, cftMns: null, cftSystemEng: null, cftBizMgmt: null,
+        notice: null, approval: null,
         autoClassification: cls.autoClassification, classificationReason: cls.classificationReason,
         classificationConfirmed: false, isSonchunggeum: false,
         createdAt: now, updatedAt: now,
@@ -232,6 +256,171 @@ export function syncPortal(portalRows) {
     }])
   }
   return { created, updated, excluded, total: portalRows.length }
+}
+
+// 국책사업 전용 포털 업로드 — 계약번호(portalKey)가 아니라 내부관리번호(govKey)가 키다.
+// syncPortal과 거의 동일한 구조지만 금액/사업형태 기준 자동분류는 안 한다(이 양식엔 안 맞음) —
+// 대신 심의방법 기본값을 서면보고(전자결재)로 고정한다(사용자 요청).
+export function syncGovPortal(govRows) {
+  const now = new Date().toISOString()
+  const byKey = new Map((projects ?? []).filter((p) => p.govKey).map((p) => [p.govKey, p]))
+  const seenKeys = new Set()
+  let created = 0, updated = 0
+  const logs = []
+
+  const nextProjects = [...(projects ?? [])]
+
+  for (const row of govRows) {
+    seenKeys.add(row.govKey)
+    const existing = byKey.get(row.govKey)
+    const govPatch = Object.fromEntries(GOV_FIELDS.map((f) => [f, row[f] ?? null]))
+
+    if (existing) {
+      const idx = nextProjects.findIndex((p) => p.id === existing.id)
+      const changed = GOV_FIELDS.some((f) => existing[f] !== govPatch[f]) || existing.excluded
+      if (changed) {
+        nextProjects[idx] = { ...existing, ...govPatch, excluded: false, updatedAt: now }
+        updated++
+      }
+    } else {
+      const newRecord = {
+        id: nextId++,
+        portalKey: null,
+        govKey: row.govKey,
+        projectType: '국책사업',
+        excluded: false,
+        isNew: true,
+        contractName: row.contractName ?? '', contractMethod: null, appliedBusiness: null, businessType: null, bm: null,
+        businessDivision: null,
+        // 국책사업은 기본 심의방법을 서면보고(구 "전자결재")로 둔다 — 사용자 요청, 답변 참고.
+        pm: row.pm ?? null, pmDeptName: null, note: null, reviewMethod: '서면보고', chair: null, reviewDate: null, reviewResult: null, reviewContent: null,
+        pmRequest: null, pmDue: null, pmComplete: null, cftRequest: null,
+        cftAi: null, cftSwTest: null, cftPurchase: null, cftQuality: null, cftCostAnalysis: null, cftMns: null, cftSystemEng: null, cftBizMgmt: null,
+        notice: null, approval: null,
+        autoClassification: '서면보고', classificationReason: '국책사업 기본 적용(전자결재)',
+        classificationConfirmed: true, isSonchunggeum: false,
+        createdAt: now, updatedAt: now,
+        ...govPatch,
+      }
+      nextProjects.push(newRecord)
+      byKey.set(row.govKey, newRecord)
+      created++
+    }
+  }
+
+  // govKey 기준 제외 처리 — portalKey 기준 제외 루프와 섞이지 않게 별도로 돈다.
+  let excluded = 0
+  for (const p of nextProjects) {
+    if (p.govKey && !seenKeys.has(p.govKey) && !p.excluded) {
+      p.excluded = true
+      p.updatedAt = now
+      excluded++
+    }
+  }
+
+  projects = nextProjects
+  writeJsonAtomic(PROJECTS_FILE, projects)
+  if (created > 0 || updated > 0 || excluded > 0) {
+    logHistory([{
+      id: `${Date.now()}-govsync`, ts: now, projectId: null, recordName: '(국책사업 동기화)',
+      field: '__sync__', from: null, to: `신규 ${created} · 갱신 ${updated} · 제외 ${excluded}`,
+    }])
+  }
+  return { created, updated, excluded, total: govRows.length }
+}
+
+// 레거시 업로드(migrateLegacyRows) 직전에 호출 — 잘못 올렸을 때 파일째로 되돌릴 수 있는 마지막 안전망.
+export function backupDataFiles() {
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-')
+  const dir = path.join(DATA_DIR, `backup_${stamp}`)
+  fs.mkdirSync(dir, { recursive: true })
+  for (const file of [PROJECTS_FILE, HISTORY_FILE, COMMENTS_FILE]) {
+    if (fs.existsSync(file)) fs.copyFileSync(file, path.join(dir, path.basename(file)))
+  }
+  return dir
+}
+
+// 구 엑셀(안건 관리 시트) 업로드 — 포털 동기화와 정반대 성격: PORTAL_FIELDS는 절대 건드리지 않고
+// TEAM_FIELDS만 채운다. row는 lib/legacyParser.js가 만든 형태를 그대로 받는다.
+// updateProject/createProject를 행마다 호출하면 그때그때 파일을 쓰게 되는데, 수십 행만 돼도
+// 아주 짧은 시간에 projects.json/history.json을 연속으로 rename하다가 Windows에서
+// EPERM(파일 잠금 충돌)이 난다 — syncPortal처럼 메모리에서 전부 처리한 뒤 딱 한 번씩만 저장한다.
+export function migrateLegacyRows(legacyRows) {
+  const now = new Date().toISOString()
+  const byKey = new Map((projects ?? []).filter((p) => p.portalKey).map((p) => [p.portalKey, p]))
+  const nextProjects = [...(projects ?? [])]
+  const logs = []
+  let matched = 0, created = 0
+  const unrecognizedReviewMethod = []
+
+  for (const row of legacyRows) {
+    const existing = row.portalKey ? byKey.get(row.portalKey) : null
+
+    // 심의방법은 그대로 옮기면 안 된다 — 구 엑셀은 대면보고(부문장)/(연구개발본부장) 구분이 생기기
+    // 전 값("심의회")을 쓰므로, 위원장(chair) 텍스트로 어느 쪽인지 판단한다. 판단 안 되면 필드 자체를
+    // 건드리지 않고(=미지정 유지) 리포트에 플래그만 남긴다.
+    let reviewMethod
+    if (row.reviewMethod === '심의회') {
+      const chair = row.chair ?? ''
+      if (chair.includes('부문장')) reviewMethod = FACE_TO_FACE_SONCHUNGGEUM
+      else if (chair.includes('대표이사') || chair.includes('본부장')) reviewMethod = FACE_TO_FACE_DEFAULT
+      else unrecognizedReviewMethod.push({ contractName: row.contractName, raw: row.reviewMethod, chair: row.chair })
+    } else if (LEGACY_REVIEW_METHOD_PASSTHROUGH.has(row.reviewMethod)) {
+      reviewMethod = row.reviewMethod
+    } else if (row.reviewMethod) {
+      unrecognizedReviewMethod.push({ contractName: row.contractName, raw: row.reviewMethod, chair: row.chair })
+    }
+
+    const teamPatch = {}
+    for (const field of TEAM_FIELDS) {
+      if (field === 'reviewMethod') continue
+      if (row[field] != null) teamPatch[field] = row[field]
+    }
+    if (reviewMethod) teamPatch.reviewMethod = reviewMethod
+
+    if (existing) {
+      const patch = { ...teamPatch, classificationConfirmed: true }
+      const idx = nextProjects.findIndex((p) => p.id === existing.id)
+      const entries = Object.entries(patch).filter(([k, v]) => existing[k] !== v)
+      for (const [field, value] of entries) {
+        logs.push({
+          id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          ts: now, projectId: existing.id, recordName: existing.contractName, field, from: existing[field], to: value, actor: null,
+        })
+      }
+      nextProjects[idx] = { ...existing, ...patch, updatedAt: now }
+      matched++
+    } else {
+      const note = row.note ? `[이관-미매칭, 수동확인 필요] ${row.note}` : '[이관-미매칭, 수동확인 필요]'
+      const businessType = row.businessType ?? null
+      const amount = row.amount ?? null
+      const cls = classifyReviewMethod(businessType, amount)
+      const rec = {
+        id: nextId++,
+        portalKey: null, govKey: null, projectType: '사업', excluded: false, isNew: false,
+        contractName: row.contractName, deptName: null, bm: null,
+        contractOrg: row.contractOrg ?? null, contractMethod: row.contractMethod ?? null,
+        appliedBusiness: row.appliedBusiness ?? null, businessType, contractDate: row.contractDate ?? null, dueDate: row.dueDate ?? null, amount,
+        businessDivision: '미래전장사업부문',
+        pm: null, pmDeptName: null, note: null, reviewMethod: '미지정', chair: null, reviewDate: null, reviewResult: null, reviewContent: null,
+        pmRequest: null, pmDue: null, pmComplete: null, cftRequest: null,
+        cftAi: null, cftSwTest: null, cftPurchase: null, cftQuality: null, cftCostAnalysis: null, cftMns: null, cftSystemEng: null, cftBizMgmt: null,
+        notice: null, approval: null,
+        autoClassification: cls.autoClassification, classificationReason: cls.classificationReason,
+        isSonchunggeum: false,
+        createdAt: now, updatedAt: now,
+        ...teamPatch, note, classificationConfirmed: false,
+      }
+      nextProjects.push(rec)
+      logs.push({ id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}-c`, ts: now, projectId: rec.id, recordName: rec.contractName, field: '__created__', from: null, to: null })
+      created++
+    }
+  }
+
+  projects = nextProjects
+  writeJsonAtomic(PROJECTS_FILE, projects)
+  logHistory(logs)
+  return { matched, created, unrecognizedReviewMethod, total: legacyRows.length }
 }
 
 // ponytail: projects.json/history.json/comments.json은 각각 원자적으로 저장되지만, 두 파일에

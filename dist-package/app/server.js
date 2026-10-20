@@ -5,6 +5,8 @@ import path from 'path'
 import fs from 'fs'
 import { fileURLToPath } from 'url'
 import { parsePortalBuffer } from './lib/portalParser.js'
+import { parseGovBuffer } from './lib/govPortalParser.js'
+import { parseLegacyBuffer } from './lib/legacyParser.js'
 import * as store from './lib/store.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -160,6 +162,36 @@ app.post('/api/projects/sync', express.raw({ type: '*/*', limit: '80mb' }), (req
     const portalRows = parsePortalBuffer(buffer)
     const summary = store.syncPortal(portalRows)
     res.json({ summary, records: store.getProjects() })
+  } catch (err) {
+    res.status(400).json({ error: err.message })
+  }
+})
+
+// ── 국책사업 전용 포털 업로드 ───────────────────────────────────
+// 계약번호가 아니라 내부관리번호(govKey)가 키인 별도 양식. GOV_FIELDS만 갱신.
+app.post('/api/projects/sync-gov', express.raw({ type: '*/*', limit: '80mb' }), (req, res) => {
+  const buffer = req.body
+  if (!Buffer.isBuffer(buffer) || buffer.length === 0) return res.status(400).json({ error: '파일 데이터가 없습니다.' })
+  try {
+    const govRows = parseGovBuffer(buffer)
+    const summary = store.syncGovPortal(govRows)
+    res.json({ summary, records: store.getProjects() })
+  } catch (err) {
+    res.status(400).json({ error: err.message })
+  }
+})
+
+// ── 구 엑셀(안건 관리 시트) 업로드 ───────────────────────────────
+// 포털 동기화와 반대 방향: TEAM_FIELDS만 채우고 PORTAL_FIELDS는 절대 건드리지 않는다.
+// 실데이터 업로드라 매번 시작 전에 자동 백업을 떠둔다(사용자가 따로 신경 안 써도 되게).
+app.post('/api/projects/migrate-legacy', express.raw({ type: '*/*', limit: '80mb' }), (req, res) => {
+  const buffer = req.body
+  if (!Buffer.isBuffer(buffer) || buffer.length === 0) return res.status(400).json({ error: '파일 데이터가 없습니다.' })
+  try {
+    const legacyRows = parseLegacyBuffer(buffer)
+    const backupDir = store.backupDataFiles()
+    const summary = store.migrateLegacyRows(legacyRows)
+    res.json({ summary, backupDir, records: store.getProjects() })
   } catch (err) {
     res.status(400).json({ error: err.message })
   }
