@@ -7,10 +7,26 @@ export default function VerticalStepper({ record, onUpdate }) {
   const order = ['A', 'B', 'C', 'D', 'E', 'F']
   const activeIdx = order.indexOf(stage.code)
 
+  if (stage.code === 'U') {
+    return (
+      <div className="rounded-xl border border-line bg-paper px-4 py-6 text-center text-sm text-slate">
+        심의방법 미지정 — 서면보고/대면보고/미실시/대상아님 중 하나로 지정하면 진행 단계가 표시됩니다.
+      </div>
+    )
+  }
+
   if (stage.code === 'N') {
     return (
       <div className="rounded-xl border border-line bg-paper px-4 py-6 text-center text-sm text-slate">
-        심의 미실시 — Y열을 전자결재/심의회로 변경하면 진행 단계가 표시됩니다.
+        심의 미실시 — 심의방법을 서면보고/대면보고로 변경하면 진행 단계가 표시됩니다.
+      </div>
+    )
+  }
+
+  if (stage.code === 'NA') {
+    return (
+      <div className="rounded-xl border border-line bg-paper px-4 py-6 text-center text-sm text-slate">
+        심의 대상 아님 — 진행 단계를 추적하지 않습니다.
       </div>
     )
   }

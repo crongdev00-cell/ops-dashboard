@@ -1,5 +1,6 @@
 // C열(진행 상태) 자동 계산 로직 — Y열과 AI~AW 날짜 필드로부터 실시간 파생.
 export const STAGES = {
+  U: { code: 'U', label: '미지정', color: '#d1d5db' },
   N: { code: 'N', label: '미실시', color: '#9ca3af' },
   NA: { code: 'NA', label: '대상아님', color: '#cbd5e1' },
   AUTO: { code: 'Auto', label: 'PM요청 대기', color: '#a78bfa' },
@@ -11,7 +12,12 @@ export const STAGES = {
   F: { code: 'F', label: '결재완료', color: '#16a34a' },
 }
 
-export const REVIEW_METHODS = ['미실시', '전자결재', '심의회', '대상아님']
+// "서면보고"/"대면보고"는 원래 '전자결재'/'심의회'였으나, 사용자가 헷갈린다고 해서 통일한 용어.
+// 대면보고는 결재권자가 둘로 갈린다 — 손충금 사업이면 부문장, 그 외(무기체계/핵심기술 금액 기준 충족)는 연구개발본부장.
+export const FACE_TO_FACE_SONCHUNGGEUM = '대면보고(부문장)'
+export const FACE_TO_FACE_DEFAULT = '대면보고(연구개발본부장)'
+export const REVIEW_METHODS = ['미지정', '미실시', '서면보고', FACE_TO_FACE_SONCHUNGGEUM, FACE_TO_FACE_DEFAULT, '대상아님']
+const FACE_TO_FACE_METHODS = new Set([FACE_TO_FACE_SONCHUNGGEUM, FACE_TO_FACE_DEFAULT])
 
 export const STEP_SEQUENCE = [
   { key: 'pmRequest', stage: 'A', label: 'PM 요청' },
@@ -23,8 +29,9 @@ export const STEP_SEQUENCE = [
 ]
 
 // 8(+대상아님)개 세부 단계를 원본 스프레드시트의 병합 헤더 기준 상위 3그룹으로 묶는다.
-// 미실시/대상아님은 이 3그룹(AI~AW 진행 과정) 밖의 별도 상태라 그룹에 포함하지 않는다.
+// 미지정/미실시/대상아님은 이 3그룹(AI~AW 진행 과정) 밖의 별도 상태라 그룹에 포함하지 않는다.
 export const STAGE_GROUPS = [
+  { key: 'unset', label: '미지정', codes: ['U'] },
   { key: 'notStarted', label: '미실시', codes: ['N'] },
   { key: 'pmWriting', label: '[PM] 작성 현황', codes: ['Auto', 'A', 'B'] },
   { key: 'cftReview', label: '[유관부서(CFT)] 검토 현황', codes: ['C', 'D'] },
@@ -37,9 +44,9 @@ const hasDate = (v) => !!v
 export function computeStage(record) {
   const y = (record.reviewMethod ?? '').trim()
   if (y === '대상아님') return STAGES.NA
-  if (y === '미실시' || y === '') return STAGES.N
+  if (y === '미실시') return STAGES.N
 
-  if (y === '전자결재' || y === '심의회') {
+  if (y === '서면보고' || FACE_TO_FACE_METHODS.has(y)) {
     if (!hasDate(record.pmRequest)) return STAGES.AUTO
     if (!hasDate(record.pmComplete)) return STAGES.A
     if (!hasDate(record.cftRequest)) return STAGES.B
@@ -48,7 +55,8 @@ export function computeStage(record) {
     if (!hasDate(record.approval)) return STAGES.E
     return STAGES.F
   }
-  return STAGES.N
+  // '미지정'이거나 빈 값, 또는 알 수 없는 값 — 아직 아무도 심의방법을 정하지 않은 상태.
+  return STAGES.U
 }
 
 const ORDER = ['A', 'B', 'C', 'D', 'E', 'F']

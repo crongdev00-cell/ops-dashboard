@@ -6,7 +6,8 @@ import { useEscapeKey } from '../lib/useEscapeKey'
 
 const DATE_FIELDS = new Set(['pmRequest', 'pmComplete', 'cftRequest', 'sysManage', 'notice', 'approval', 'reviewDate', 'contractDate', 'dueDate'])
 const FIELD_LABELS = {
-  contractName: '계약(사업)명', deptName: '부서', pm: 'PM', reviewMethod: '심의방법', businessDivision: '사업부문',
+  contractName: '계약(사업)명', deptName: 'BM 부서', bm: 'BM 이름', pm: 'PM', pmDeptName: 'PM 부서',
+  reviewMethod: '심의방법', businessDivision: '사업부문', businessType: '사업형태', isSonchunggeum: '손충금 사업',
   amount: '계약금액', note: '비고', appliedBusiness: '적용사업', excluded: '제외 여부',
   pmRequest: 'PM 요청일', pmComplete: 'PM 작성완료일', cftRequest: 'CFT 요청일',
   sysManage: '체계관리일', notice: '안내일', approval: '결재완료일',
@@ -58,6 +59,8 @@ export default function ActivityLogPanel({ open, onClose }) {
                   <p className="mt-1 text-xs text-slate">안건 생성됨</p>
                 ) : h.field === '__sync__' ? (
                   <p className="mt-1 text-xs text-slate">포털 동기화 — {h.to}</p>
+                ) : h.field === '__deleted__' ? (
+                  <p className="mt-1 text-xs text-red-600">안건 삭제됨</p>
                 ) : (
                   <>
                     <p className="mt-1 text-xs text-slate">

@@ -1,15 +1,15 @@
-import { useState } from 'react'
-import { Send, Sparkles, Loader2, AlertCircle } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { Send, Sparkles, AlertCircle } from 'lucide-react'
 import { useData } from '../../context/DataContext'
 import { askLlm, buildRecordsContext } from '../../lib/llm'
 
 const MODELS = [
   { id: 'gemini', label: 'Gemini', note: '외부 API — 비식별 데이터에만 사용하세요' },
   { id: 'gemma', label: 'Gemma', note: '사내망 — 짧은 단건 질의에 적합' },
-  { id: 'exaone', label: 'EXAONE', note: '사내망 — 컨텍스트가 커서 대량 종합 분석에 적합' },
+  { id: 'qwen', label: 'Qwen', note: '사내망 — 컨텍스트가 커서 대량 종합 분석에 적합' },
 ]
 
-const SUGGESTIONS = ['전체 안건 진행 상황을 요약해줘', '병목 위험이 큰 안건 3개만 짚어줘', '부서별로 결재완료 비율을 비교해줘']
+const SUGGESTIONS = ['전체 안건 진행 상황을 요약해줘', '정체 위험이 큰 안건 3개만 짚어줘', '부서별로 결재완료 비율을 비교해줘']
 
 export default function AiAssistantView() {
   const { records, visibleRecords } = useData()
@@ -18,6 +18,20 @@ export default function AiAssistantView() {
   const [thread, setThread] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [elapsedSec, setElapsedSec] = useState(0)
+  const timerRef = useRef(null)
+
+  // 사내 LLM은 응답이 수십 초씩 걸리는 경우가 많아서, 그냥 스피너만으로는 "멈춘 건지 아직 진행 중인지"
+  // 구분이 안 된다 — 경과 시간을 초 단위로 계속 보여줘서 계속 작동 중임을 명확히 한다.
+  useEffect(() => {
+    if (loading) {
+      setElapsedSec(0)
+      timerRef.current = setInterval(() => setElapsedSec((s) => s + 1), 1000)
+    } else {
+      clearInterval(timerRef.current)
+    }
+    return () => clearInterval(timerRef.current)
+  }, [loading])
 
   const send = async (text) => {
     const question = (text ?? input).trim()
@@ -96,8 +110,15 @@ export default function AiAssistantView() {
         ))}
 
         {loading && (
-          <div className="flex items-center gap-2 text-xs text-slate">
-            <Loader2 size={13} className="animate-spin" /> {MODELS.find((m) => m.id === model)?.label} 응답 대기 중…
+          <div className="flex justify-start">
+            <div className="flex items-center gap-2.5 rounded-2xl bg-paper px-3.5 py-2.5 text-xs text-slate">
+              <span className="flex items-center gap-1">
+                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-indigo" style={{ animationDelay: '0ms' }} />
+                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-indigo" style={{ animationDelay: '150ms' }} />
+                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-indigo" style={{ animationDelay: '300ms' }} />
+              </span>
+              {MODELS.find((m) => m.id === model)?.label} 응답 생성 중… {elapsedSec}초 경과
+            </div>
           </div>
         )}
         {error && (

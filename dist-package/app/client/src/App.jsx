@@ -4,8 +4,10 @@ import Sidebar, { VIEWS, AI_VIEW } from './components/Sidebar'
 import CommandPalette from './components/CommandPalette'
 import FilterBar from './components/FilterBar'
 import OverdueBanner from './components/OverdueBanner'
+import CftOverdueBanner from './components/CftOverdueBanner'
 import ActivityLogPanel from './components/ActivityLogPanel'
 import PortalSyncButton from './components/PortalSyncButton'
+import FlashButton from './components/common/FlashButton'
 import AddRecordModal from './components/AddRecordModal'
 import RecordModal from './components/common/RecordModal'
 import ExecutiveDashboardView from './components/views/ExecutiveDashboardView'
@@ -85,21 +87,25 @@ function Shell() {
             <p className="mt-0.5 text-xs text-slate">모든 필드는 클릭해서 바로 수정할 수 있습니다 · 날짜는 클릭하면 달력이 열립니다</p>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={() => setAddOpen(true)} className="flex items-center gap-1.5 rounded-lg border border-line bg-paper px-3 py-1.5 text-xs text-slate transition-colors hover:bg-line/40 active:scale-95 active:bg-line/60">
+            <FlashButton onClick={() => setAddOpen(true)} className="flex items-center gap-1.5 rounded-lg border border-line bg-paper px-3 py-1.5 text-xs text-slate hover:bg-line/40">
               <Plus size={13} /> 안건 추가
-            </button>
+            </FlashButton>
             <PortalSyncButton />
-            <button onClick={() => setLogOpen(true)} className="flex items-center gap-1.5 rounded-lg border border-line bg-paper px-3 py-1.5 text-xs text-slate transition-colors hover:bg-line/40 active:scale-95 active:bg-line/60">
+            <FlashButton onClick={() => setLogOpen(true)} className="flex items-center gap-1.5 rounded-lg border border-line bg-paper px-3 py-1.5 text-xs text-slate hover:bg-line/40">
               <History size={13} /> 변경 이력{history.length > 0 && ` (${history.length})`}
-            </button>
-            <button onClick={() => setPaletteOpen(true)} className="flex items-center gap-2 rounded-lg border border-line bg-paper px-3 py-1.5 text-xs text-slate transition-colors hover:bg-line/40 active:scale-95 active:bg-line/60">
+            </FlashButton>
+            <FlashButton onClick={() => setPaletteOpen(true)} className="flex items-center gap-2 rounded-lg border border-line bg-paper px-3 py-1.5 text-xs text-slate hover:bg-line/40">
               안건 검색
               <kbd className="rounded border border-line bg-surface px-1.5 py-0.5 text-[10px]">⌘K</kbd>
-            </button>
+            </FlashButton>
           </div>
         </header>
 
-        <OverdueBanner onViewOverdue={() => { setFilters((f) => ({ ...f, overdueOnly: true })); setView('grid') }} />
+        {/* 배너의 건수는 부문 탭과 무관하게 전체 기준으로 센다 — "전체 확인하기"를 눌렀을 때도
+            division을 'all'로 같이 바꿔야, 지금 다른 부문 탭이 선택되어 있어서 그중 일부가
+            가려지는 바람에 "전체"라는 말과 실제로 보이는 건수가 안 맞는 모순을 막을 수 있다. */}
+        <OverdueBanner onViewOverdue={() => { setFilters((f) => ({ ...f, overdueOnly: true, division: 'all' })); setView('grid') }} />
+        <CftOverdueBanner onViewCftOverdue={() => { setFilters((f) => ({ ...f, cftOverdueOnly: true, division: 'all' })); setView('grid') }} />
         {view !== 'ai' && <FilterBar />}
 
         <main className="min-h-0 flex-1 overflow-auto p-6">

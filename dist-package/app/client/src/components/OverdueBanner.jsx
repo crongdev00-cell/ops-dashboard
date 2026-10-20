@@ -10,7 +10,7 @@ export default function OverdueBanner({ onViewOverdue }) {
 
   const overdue = records.filter((r) => {
     const stage = computeStage(r)
-    return r.dueDate && r.dueDate < today && stage.code !== 'F' && stage.code !== 'N'
+    return r.dueDate && r.dueDate < today && stage.code !== 'F' && stage.code !== 'N' && stage.code !== 'NA' && stage.code !== 'U'
   })
 
   if (dismissed || overdue.length === 0) return null

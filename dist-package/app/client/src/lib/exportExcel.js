@@ -2,7 +2,8 @@ import * as XLSX from 'xlsx'
 import { computeStage } from './stage.js'
 
 const HEADERS = {
-  no: 'No.', contractName: '계약(사업)명', businessDivision: '사업부문', deptName: '부서', pm: 'PM', appliedBusiness: '적용사업',
+  no: 'No.', contractName: '계약(사업)명', businessDivision: '사업부문', deptName: 'BM 부서', bm: 'BM 이름',
+  pm: 'PM', pmDeptName: 'PM 부서', appliedBusiness: '적용사업',
   amount: '계약금액(백만원)', dueDate: '완료기한', reviewMethod: '심의방법', stage: '진행상태',
   pmRequest: 'PM요청', pmComplete: 'PM작성완료', cftRequest: 'CFT요청',
   sysManage: '체계관리', notice: '안내', approval: '결재완료', note: '비고', excluded: '제외됨',
@@ -14,7 +15,9 @@ export function exportRecordsToExcel(records, filename = '개발심의회_현황
     [HEADERS.contractName]: r.contractName,
     [HEADERS.businessDivision]: r.businessDivision,
     [HEADERS.deptName]: r.deptName,
+    [HEADERS.bm]: r.bm,
     [HEADERS.pm]: r.pm,
+    [HEADERS.pmDeptName]: r.pmDeptName,
     [HEADERS.appliedBusiness]: r.appliedBusiness,
     [HEADERS.amount]: r.amount,
     [HEADERS.dueDate]: r.dueDate,

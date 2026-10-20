@@ -16,7 +16,33 @@ function loadSavedFilters() {
 const EMPTY_FILTERS = {
   dept: 'all', pm: 'all', stage: 'all', query: '', overdueOnly: false,
   division: OUR_DIVISION, // '미래전장사업부문' | '그 외 부문' | '미지정' | 'all'
-  newOnly: false, showExcluded: false, noPmOnly: false,
+  newOnly: false, showExcluded: false, noPmOnly: false, cftOverdueOnly: false, needsClassificationOnly: false,
+}
+
+// 부문 탭 하나의 판정 로직 — visibleRecords 필터링과 부서/PM 드롭다운 선택지 산출, 양쪽에서 똑같이 쓴다.
+function matchesDivision(record, division) {
+  if (division === OUR_DIVISION) return record.businessDivision === OUR_DIVISION
+  if (division === '그 외 부문') return !!record.businessDivision && record.businessDivision !== OUR_DIVISION && record.businessDivision !== NOT_APPLICABLE
+  if (division === '미지정') return !record.businessDivision
+  return true // 'all'
+}
+
+// 포털 동기화가 1차 추천 분류는 해줬지만 담당자가 아직 "확정"을 안 누른 건 — 수기 등록 안건은
+// 애초에 autoClassification이 없어서(확정 대상 아님) 여기 안 걸린다.
+export function needsClassification(record) {
+  return !!record.portalKey && !record.classificationConfirmed
+}
+
+// CFT(유관부서) 검토 요청 후 이 기간이 지나도 완료가 안 되면 지연으로 본다 (2주 목표).
+export const CFT_SLA_DAYS = 14
+export function isCftOverdue(record, todayIso = new Date().toISOString().slice(0, 10)) {
+  // 심의방법을 나중에 "미실시"/"대상아님"으로 바꿔도 예전에 찍힌 cftRequest 날짜는 그대로 남는다 —
+  // 더 이상 심의 대상이 아닌데 옛 날짜 때문에 CFT 지연으로 계속 잡히면 안 된다.
+  const stageCode = computeStage(record).code
+  if (stageCode === 'N' || stageCode === 'NA' || stageCode === 'U') return false
+  if (!record.cftRequest || record.sysManage) return false
+  const days = Math.round((new Date(todayIso) - new Date(record.cftRequest)) / 86400000)
+  return days >= CFT_SLA_DAYS
 }
 
 async function api(path, options) {
@@ -62,7 +88,7 @@ export function DataProvider({ children }) {
       setComments(commentsRes.comments.map((c) => ({ ...c, ts: new Date(c.ts) })))
       setSelectedId((prev) => prev ?? projectsRes.records[0]?.id)
     } catch (err) {
-      setLoadError(`서버에서 데이터를 불러오지 못했습니다: ${err.message} (백엔드가 켜져 있는지 확인하세요)`)
+      setLoadError(`서버에서 데이터를 불러오지 못했습니다: ${err.message} (F5로 새로고침 해주세요)`)
     } finally {
       setLoading(false)
     }
@@ -121,11 +147,17 @@ export function DataProvider({ children }) {
 
   const deleteRecord = async (id) => {
     try {
-      const updated = await api(`/api/projects/${id}`, { method: 'DELETE' })
-      setRecords((prev) => prev.map((r) => (r.id === id ? updated : r)))
+      await api(`/api/projects/${id}`, { method: 'DELETE' })
+      setRecords((prev) => prev.filter((r) => r.id !== id))
     } catch (err) {
-      throw new Error(`제외 처리 실패: ${err.message}`)
+      throw new Error(`삭제 실패: ${err.message}`)
     }
+  }
+
+  const bulkDelete = async (ids) => {
+    const results = await Promise.allSettled(ids.map((id) => deleteRecord(id)))
+    const failed = results.filter((r) => r.status === 'rejected').length
+    if (failed > 0) throw new Error(`${failed}/${ids.length}건 삭제 실패`)
   }
 
   const markSeen = (id) => updateRecord(id, { isNew: false }).catch((err) => console.error('[markSeen] failed', err)) // 부수효과성 업데이트라 화면엔 에러를 띄우지 않지만, 콘솔엔 남긴다
@@ -153,14 +185,14 @@ export function DataProvider({ children }) {
     setSyncing(true)
     setSyncError(null)
     try {
-      // 스프레드로 통째로 fromCharCode에 넘기면 실제 포털 파일 크기(수백 KB~)에서 콜스택이 넘친다 — FileReader로 안전하게 변환.
-      const fileBase64 = await new Promise((resolve, reject) => {
-        const reader = new FileReader()
-        reader.onload = () => resolve(reader.result.split(',')[1])
-        reader.onerror = () => reject(reader.error)
-        reader.readAsDataURL(file)
+      // base64로 감싸서 JSON으로 보내면 파일 크기가 1.3배로 불어나고, 원본·base64 문자열·디코딩
+      // 버퍼가 동시에 메모리에 떠서 실제 사업포털 규모(수만 건)의 큰 엑셀에서 서버가 멈추거나
+      // 죽는 원인이 됐다 — 파일을 그대로(바이너리) 보낸다.
+      const result = await api('/api/projects/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/octet-stream' },
+        body: file,
       })
-      const result = await api('/api/projects/sync', { method: 'POST', body: JSON.stringify({ fileBase64 }) })
       setRecords(result.records)
       setLastSync({ ...result.summary, at: new Date(), fileName: file.name })
       return result.summary
@@ -189,17 +221,25 @@ export function DataProvider({ children }) {
   const clearSelection = () => setSelectedIds(new Set())
 
   const activeRecords = useMemo(() => records.filter((r) => !r.excluded), [records])
-  const depts = useMemo(() => [...new Set(activeRecords.map((r) => r.deptName).filter(Boolean))], [activeRecords])
-  const pms = useMemo(() => [...new Set(activeRecords.map((r) => r.pm).filter(Boolean))], [activeRecords])
+
+  // 부서 탭(미래전장사업부문/그 외 부문/미지정/전체)만 반영한 레코드 — 부서·PM 드롭다운의
+  // 선택지 범위를 정하는 데 쓴다. dept/pm/stage 등 자기 자신 아래 필터는 반영하지 않는다 —
+  // 그렇지 않으면 부서를 하나 고르는 순간 PM 드롭다운에서 다른 부서 소속 PM들이 사라지는
+  // 식으로 서로를 계속 좁혀버려서 필터를 풀 방법이 없어진다.
+  const divisionScopedRecords = useMemo(() => {
+    const base = filters.showExcluded ? records : activeRecords
+    return base.filter((r) => matchesDivision(r, filters.division))
+  }, [records, activeRecords, filters.showExcluded, filters.division])
+
+  const depts = useMemo(() => [...new Set(divisionScopedRecords.map((r) => r.deptName).filter(Boolean))], [divisionScopedRecords])
+  const pms = useMemo(() => [...new Set(divisionScopedRecords.map((r) => r.pm).filter(Boolean))], [divisionScopedRecords])
 
   const visibleRecords = useMemo(() => {
     const q = filters.query.trim().toLowerCase()
     const today = new Date().toISOString().slice(0, 10)
     return records.filter((r) => {
       if (!filters.showExcluded && r.excluded) return false
-      if (filters.division === OUR_DIVISION && r.businessDivision !== OUR_DIVISION) return false
-      if (filters.division === '그 외 부문' && (r.businessDivision === OUR_DIVISION || r.businessDivision === NOT_APPLICABLE || !r.businessDivision)) return false
-      if (filters.division === '미지정' && r.businessDivision) return false
+      if (!matchesDivision(r, filters.division)) return false
       if (filters.dept !== 'all' && r.deptName !== filters.dept) return false
       if (filters.pm !== 'all' && r.pm !== filters.pm) return false
       if (filters.stage !== 'all' && computeStage(r).code !== filters.stage) return false
@@ -208,23 +248,25 @@ export function DataProvider({ children }) {
       if (q && !r.contractName?.toLowerCase().includes(q)) return false
       if (filters.overdueOnly) {
         const stage = computeStage(r)
-        if (!(r.dueDate && r.dueDate < today && stage.code !== 'F' && stage.code !== 'N')) return false
+        if (!(r.dueDate && r.dueDate < today && stage.code !== 'F' && stage.code !== 'N' && stage.code !== 'NA' && stage.code !== 'U')) return false
       }
+      if (filters.cftOverdueOnly && !isCftOverdue(r, today)) return false
+      if (filters.needsClassificationOnly && !needsClassification(r)) return false
       return true
     })
   }, [records, filters])
 
   const value = useMemo(
     () => ({
-      records, activeRecords, visibleRecords, loading, loadError,
-      selectedId, setSelectedId, updateRecord, bulkUpdate, addRecord, deleteRecord, markSeen,
+      records, activeRecords, divisionScopedRecords, visibleRecords, loading, loadError,
+      selectedId, setSelectedId, updateRecord, bulkUpdate, bulkDelete, addRecord, deleteRecord, markSeen,
       history, undoHistory, comments, addComment,
       selectedIds, toggleSelect, clearSelection,
       filters, setFilters, depts, pms,
       savedFilters, saveCurrentFilter, applySavedFilter, deleteSavedFilter,
       syncing, syncError, lastSync, syncPortalFile, refreshAll,
     }),
-    [records, activeRecords, visibleRecords, loading, loadError, selectedId, history, comments,
+    [records, activeRecords, divisionScopedRecords, visibleRecords, loading, loadError, selectedId, history, comments,
       selectedIds, filters, depts, pms, savedFilters, syncing, syncError, lastSync]
   )
 

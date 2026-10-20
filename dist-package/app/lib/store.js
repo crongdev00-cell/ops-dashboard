@@ -1,6 +1,7 @@
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import { classifyReviewMethod } from './classify.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const DATA_DIR = process.env.OPS_DATA_DIR || path.join(__dirname, '..', 'data') // 테스트가 실데이터를 건드리지 않도록 오버라이드 가능
@@ -10,8 +11,9 @@ const COMMENTS_FILE = path.join(DATA_DIR, 'comments.json')
 
 // 팀이 이 웹앱에서 직접 관리하는 필드. 포털 동기화는 이 필드들을 절대 건드리지 않는다.
 export const TEAM_FIELDS = [
-  'businessDivision', 'pm', 'note', 'reviewMethod', 'chair', 'reviewDate', 'reviewResult', 'reviewContent',
+  'businessDivision', 'pm', 'pmDeptName', 'note', 'reviewMethod', 'chair', 'reviewDate', 'reviewResult', 'reviewContent',
   'pmRequest', 'pmDue', 'pmComplete', 'cftRequest', 'sysManage', 'notice', 'approval',
+  'isSonchunggeum', 'classificationConfirmed',
 ]
 // 포털 동기화가 갱신하는 필드.
 export const PORTAL_FIELDS = [
@@ -96,10 +98,21 @@ export function createProject(data) {
     contractName: '', deptName: null, bm: null, contractOrg: null, contractMethod: null,
     appliedBusiness: null, businessType: null, contractDate: null, dueDate: null, amount: null,
     businessDivision: '미래전장사업부문',
-    pm: null, note: null, reviewMethod: '미실시', chair: null, reviewDate: null, reviewResult: null, reviewContent: null,
+    pm: null, pmDeptName: null, note: null, reviewMethod: '미지정', chair: null, reviewDate: null, reviewResult: null, reviewContent: null,
     pmRequest: null, pmDue: null, pmComplete: null, cftRequest: null, sysManage: null, notice: null, approval: null,
+    // 수기로 직접 만든 안건은 자동판정 대상이 아니라서(포털 데이터가 없음) 확정할 것도 없다 —
+    // "심의 대상 확정 필요" 목록에 안 뜨도록 처음부터 확정된 것으로 둔다.
+    autoClassification: null, classificationReason: null, classificationConfirmed: true, isSonchunggeum: false,
     createdAt: now, updatedAt: now,
     ...data,
+  }
+  // 수기로 만든 안건이라도 사업형태/금액을 직접 지정했으면 포털 동기화와 똑같은 분류 로직을 적용한다 —
+  // "확정 필요" 상태로 둬서 사람이 한 번 검토·확정하게 한다.
+  if (data.businessType != null || data.amount != null) {
+    const cls = classifyReviewMethod(rec.businessType, rec.amount)
+    rec.autoClassification = cls.autoClassification
+    rec.classificationReason = cls.classificationReason
+    rec.classificationConfirmed = false
   }
   projects = [...(projects ?? []), rec]
   writeJsonAtomic(PROJECTS_FILE, projects)
@@ -111,6 +124,15 @@ export function updateProject(id, patch, actor = null) {
   const target = getProject(id)
   if (!target) return null
   const now = new Date().toISOString()
+  // 사업형태나 금액이 바뀌면 1차 분류 추천값도 다시 계산한다 — 포털 동기화와 같은 로직.
+  // 이미 "확정"해둔 추천값이라도 근거(사업형태/금액)가 바뀌면 그 확정은 더 이상 유효하지 않으므로
+  // 다시 "확정 필요" 상태로 되돌린다.
+  if ('businessType' in patch || 'amount' in patch) {
+    const businessType = 'businessType' in patch ? patch.businessType : target.businessType
+    const amount = 'amount' in patch ? patch.amount : target.amount
+    const cls = classifyReviewMethod(businessType, amount)
+    patch = { ...patch, ...cls, classificationConfirmed: false }
+  }
   const entries = Object.entries(patch).filter(([k, v]) => k !== 'isNew' && target[k] !== v)
   const logs = entries.map(([field, value]) => ({
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
@@ -126,12 +148,20 @@ export function updateProject(id, patch, actor = null) {
 // 되돌리기: history 항목 하나를 골라 그 필드를 from 값으로 되돌린다.
 export function undoHistoryEntry(historyId) {
   const entry = history.find((h) => h.id === historyId)
-  if (!entry || entry.field === '__created__' || entry.field === '__sync__') return null
+  if (!entry || entry.field === '__created__' || entry.field === '__sync__' || entry.field === '__deleted__') return null
   return updateProject(entry.projectId, { [entry.field]: entry.from })
 }
 
+// 사용자가 직접 안건을 지우는 경우는 완전 삭제다(복원 불가) — 포털 재동기화가 내부적으로
+// 쓰는 excluded 플래그(아래 syncPortal)와는 별개의 동작이다.
 export function deleteProject(id) {
-  return updateProject(id, { excluded: true })
+  const target = getProject(id)
+  if (!target) return null
+  const now = new Date().toISOString()
+  projects = projects.filter((p) => p.id !== Number(id))
+  writeJsonAtomic(PROJECTS_FILE, projects)
+  logHistory([{ id: `${Date.now()}-d`, ts: now, projectId: Number(id), recordName: target.contractName, field: '__deleted__', from: null, to: null }])
+  return { id: Number(id), deleted: true }
 }
 
 export function syncPortal(portalRows) {
@@ -152,18 +182,28 @@ export function syncPortal(portalRows) {
       const idx = nextProjects.findIndex((p) => p.id === existing.id)
       const changed = PORTAL_FIELDS.some((f) => existing[f] !== portalPatch[f]) || existing.excluded
       if (changed) {
-        nextProjects[idx] = { ...existing, ...portalPatch, excluded: false, updatedAt: now }
+        // 포털 금액·사업형태가 바뀌면 1차 자동판정 추천값도 다시 계산한다 — 사람이 이미 "확정"한
+        // reviewMethod/classificationConfirmed는 건드리지 않고, 추천 문구만 최신으로 갱신한다.
+        const cls = classifyReviewMethod(portalPatch.businessType, portalPatch.amount)
+        nextProjects[idx] = {
+          ...existing, ...portalPatch,
+          autoClassification: cls.autoClassification, classificationReason: cls.classificationReason,
+          excluded: false, updatedAt: now,
+        }
         updated++
       }
     } else {
+      const cls = classifyReviewMethod(portalPatch.businessType, portalPatch.amount)
       const newRecord = {
         id: nextId++,
         portalKey: row.portalKey,
         excluded: false,
         isNew: true,
         businessDivision: null,
-        pm: null, note: null, reviewMethod: '미실시', chair: null, reviewDate: null, reviewResult: null, reviewContent: null,
+        pm: null, pmDeptName: null, note: null, reviewMethod: '미지정', chair: null, reviewDate: null, reviewResult: null, reviewContent: null,
         pmRequest: null, pmDue: null, pmComplete: null, cftRequest: null, sysManage: null, notice: null, approval: null,
+        autoClassification: cls.autoClassification, classificationReason: cls.classificationReason,
+        classificationConfirmed: false, isSonchunggeum: false,
         createdAt: now, updatedAt: now,
         ...portalPatch,
       }

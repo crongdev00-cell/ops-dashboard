@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
-import { X, Trash2, Sparkles, RotateCcw } from 'lucide-react'
+import { X, Trash2, Sparkles, RotateCcw, Check } from 'lucide-react'
 import StatusBadge from './StatusBadge'
 import InlineText from './InlineText'
 import VerticalStepper from './VerticalStepper'
 import CommentsSection from './CommentsSection'
-import { REVIEW_METHODS } from '../../lib/stage'
+import { REVIEW_METHODS, FACE_TO_FACE_SONCHUNGGEUM } from '../../lib/stage'
 import { CLASSIFY_OPTIONS } from '../../lib/businessDivision'
+import { BUSINESS_TYPES } from '../../lib/businessType'
 import { useData } from '../../context/DataContext'
 import { useEscapeKey } from '../../lib/useEscapeKey'
 
@@ -22,15 +23,30 @@ export default function RecordModal({ record, onClose }) {
   if (!record) return null
   const update = (patch) => updateRecord(record.id, patch).catch((err) => setActionError(err.message))
   const remove = async () => {
-    if (!confirm('이 안건을 제외 처리할까요? (완전 삭제가 아니라 목록에서만 숨겨지며, 언제든 복원할 수 있습니다)')) return
+    if (!confirm('이 안건을 완전히 삭제할까요? 되돌릴 수 없습니다.')) return
     try {
       await deleteRecord(record.id)
-      onClose() // 성공했을 때만 닫는다 — 실패했는데 닫히면 사용자는 제외된 줄 착각하게 된다.
+      onClose() // 성공했을 때만 닫는다 — 실패했는데 닫히면 사용자는 삭제된 줄 착각하게 된다.
     } catch (err) {
       setActionError(err.message)
     }
   }
   const restore = () => update({ excluded: false })
+  // 손충금 체크가 되어 있으면 무조건 대면보고(부문장), 아니면 추천 분류값 그대로가 "지금 적용돼야 할" 심의방법.
+  const expectedReviewMethod = record.isSonchunggeum ? FACE_TO_FACE_SONCHUNGGEUM : record.autoClassification
+  const classificationMismatch = !!(expectedReviewMethod && record.reviewMethod !== expectedReviewMethod)
+  // "확정"을 누르면: 아직 담당자가 심의방법을 직접 안 건드렸을 때(미지정 그대로)만 추천 분류값을
+  // 적용한다 — 이미 수동으로 바꿔놨다면(미실시 포함) 그 선택을 존중하고 확정 표시만 한다.
+  const confirmClassification = () => {
+    const patch = { classificationConfirmed: true }
+    if (record.reviewMethod === '미지정' && record.autoClassification) {
+      patch.reviewMethod = expectedReviewMethod
+    }
+    update(patch)
+  }
+  // "재적용"은 이미 확정된 뒤에 손충금 체크를 바꿔서 추천값과 실제 심의방법이 어긋났을 때,
+  // 명시적으로 눌러서 지금의 체크 상태를 심의방법에 다시 반영하는 버튼이다.
+  const reapplyClassification = () => update({ reviewMethod: expectedReviewMethod })
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4" onClick={onClose}>
@@ -51,11 +67,10 @@ export default function RecordModal({ record, onClose }) {
           </div>
           <div className="flex items-center gap-3">
             <StatusBadge record={record} />
-            {record.excluded ? (
+            {record.excluded && (
               <button onClick={restore} title="복원" className="text-slate hover:text-emerald-600"><RotateCcw size={16} /></button>
-            ) : (
-              <button onClick={remove} title="제외 처리" className="text-slate hover:text-red-600"><Trash2 size={16} /></button>
             )}
+            <button onClick={remove} title="완전 삭제" className="text-slate hover:text-red-600"><Trash2 size={16} /></button>
             <button onClick={onClose} className="text-slate hover:text-ink"><X size={18} /></button>
           </div>
         </div>
@@ -72,18 +87,24 @@ export default function RecordModal({ record, onClose }) {
         )}
 
         <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
-          <Field label="부서"><InlineText value={record.deptName} onSave={(v) => update({ deptName: v })} /></Field>
+          <Field label="BM 이름"><InlineText value={record.bm} onSave={(v) => update({ bm: v })} /></Field>
+          <Field label="BM 부서"><InlineText value={record.deptName} onSave={(v) => update({ deptName: v })} /></Field>
           <Field label="PM"><InlineText value={record.pm} onSave={(v) => update({ pm: v })} /></Field>
+          <Field label="PM 부서"><InlineText value={record.pmDeptName} onSave={(v) => update({ pmDeptName: v })} /></Field>
           <Field label="계약금액(백만원)">
-            <InlineText value={String(record.amount ?? '')} onSave={(v) => {
-              const n = v.trim() === '' ? 0 : Number(v)
-              if (Number.isNaN(n)) return setActionError('계약금액은 숫자만 입력할 수 있습니다.')
-              update({ amount: n })
-            }} />
+            <InlineText
+              value={String(record.amount ?? '')}
+              format={(v) => Number(v).toLocaleString('ko-KR')}
+              onSave={(v) => {
+                const n = v.trim() === '' ? 0 : Number(v)
+                if (Number.isNaN(n)) return setActionError('계약금액은 숫자만 입력할 수 있습니다.')
+                update({ amount: n })
+              }}
+            />
           </Field>
           <Field label="심의방법">
             <select
-              value={record.reviewMethod ?? '미실시'}
+              value={record.reviewMethod ?? '미지정'}
               onChange={(e) => update({ reviewMethod: e.target.value })}
               className="w-full rounded-md border border-line bg-white px-2 py-1 text-sm outline-none focus:border-indigo"
             >
@@ -101,7 +122,55 @@ export default function RecordModal({ record, onClose }) {
             </select>
           </Field>
           <Field label="적용사업"><InlineText value={record.appliedBusiness} onSave={(v) => update({ appliedBusiness: v })} /></Field>
+          <Field label="사업형태">
+            <select
+              value={record.businessType ?? ''}
+              onChange={(e) => update({ businessType: e.target.value || null })}
+              className="w-full rounded-md border border-line bg-white px-2 py-1 text-sm outline-none focus:border-indigo"
+            >
+              <option value="">미지정</option>
+              {BUSINESS_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+            </select>
+          </Field>
         </div>
+
+        {record.autoClassification && (
+          <div className="mb-6 rounded-xl border border-line bg-paper p-4">
+            <div className="mb-2 flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-ink">1차 분류</h3>
+              {record.classificationConfirmed ? (
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700">
+                  <Check size={10} /> 확정됨
+                </span>
+              ) : (
+                <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700">확정 필요</span>
+              )}
+            </div>
+            <p className="text-sm text-ink">
+              추천 분류: <strong>{record.autoClassification}</strong>
+              <span className="ml-1.5 text-xs text-slate">({record.classificationReason})</span>
+            </p>
+            <label className="mt-3 flex items-center gap-2 text-sm text-ink">
+              <input type="checkbox" checked={!!record.isSonchunggeum} onChange={(e) => update({ isSonchunggeum: e.target.checked })} />
+              손충금 사업 (체크하면 확정 시 대면보고(부문장)로 적용됩니다)
+            </label>
+            <p className="mt-2 text-xs text-slate">
+              참고 — 사업 특성 고려해서 서면보고로 대체하거나 미실시 처리할 수 있는 경우: 정비/수리부속,
+              유지보수, 단순 용역/제작/구매, 또는 개발기간 1년 이하·1억원 미만의 용역/제작/구매 사업
+              {record.businessType === '운영유지(정비/수리부속)' && ' — 이 안건은 사업형태가 "운영유지(정비/수리부속)"라 해당될 수 있습니다.'}
+            </p>
+            {!record.classificationConfirmed && (
+              <button onClick={confirmClassification} className="mt-3 rounded-lg bg-indigo px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo/90">
+                확정
+              </button>
+            )}
+            {record.classificationConfirmed && classificationMismatch && (
+              <button onClick={reapplyClassification} className="mt-3 rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-amber-500/90">
+                재적용 — 심의방법을 "{expectedReviewMethod}"로 변경
+              </button>
+            )}
+          </div>
+        )}
 
         <div className="mb-2 flex items-center justify-between">
           <h3 className="text-sm font-semibold text-ink">진행 단계</h3>
