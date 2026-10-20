@@ -5,6 +5,7 @@ import path from 'path'
 import fs from 'fs'
 import { fileURLToPath } from 'url'
 import { parsePortalBuffer } from './lib/portalParser.js'
+import { parseGovBuffer } from './lib/govPortalParser.js'
 import { parseLegacyBuffer } from './lib/legacyParser.js'
 import * as store from './lib/store.js'
 
@@ -160,6 +161,20 @@ app.post('/api/projects/sync', express.raw({ type: '*/*', limit: '80mb' }), (req
   try {
     const portalRows = parsePortalBuffer(buffer)
     const summary = store.syncPortal(portalRows)
+    res.json({ summary, records: store.getProjects() })
+  } catch (err) {
+    res.status(400).json({ error: err.message })
+  }
+})
+
+// ── 국책사업 전용 포털 업로드 ───────────────────────────────────
+// 계약번호가 아니라 내부관리번호(govKey)가 키인 별도 양식. GOV_FIELDS만 갱신.
+app.post('/api/projects/sync-gov', express.raw({ type: '*/*', limit: '80mb' }), (req, res) => {
+  const buffer = req.body
+  if (!Buffer.isBuffer(buffer) || buffer.length === 0) return res.status(400).json({ error: '파일 데이터가 없습니다.' })
+  try {
+    const govRows = parseGovBuffer(buffer)
+    const summary = store.syncGovPortal(govRows)
     res.json({ summary, records: store.getProjects() })
   } catch (err) {
     res.status(400).json({ error: err.message })

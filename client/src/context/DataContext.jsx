@@ -206,6 +206,26 @@ export function DataProvider({ children }) {
     }
   }
 
+  const syncGovPortalFile = async (file) => {
+    setSyncing(true)
+    setSyncError(null)
+    try {
+      const result = await api('/api/projects/sync-gov', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/octet-stream' },
+        body: file,
+      })
+      setRecords(result.records)
+      setLastSync({ ...result.summary, at: new Date(), fileName: file.name })
+      return result.summary
+    } catch (err) {
+      setSyncError(`국책사업 동기화 실패: ${err.message}`)
+      throw err
+    } finally {
+      setSyncing(false)
+    }
+  }
+
   const migrateLegacyFile = async (file) => {
     setMigrating(true)
     setMigrateError(null)
@@ -286,7 +306,7 @@ export function DataProvider({ children }) {
       selectedIds, toggleSelect, clearSelection,
       filters, setFilters, depts, pms,
       savedFilters, saveCurrentFilter, applySavedFilter, deleteSavedFilter,
-      syncing, syncError, lastSync, syncPortalFile, refreshAll,
+      syncing, syncError, lastSync, syncPortalFile, syncGovPortalFile, refreshAll,
       migrating, migrateError, migrateLegacyFile,
     }),
     [records, activeRecords, divisionScopedRecords, visibleRecords, loading, loadError, selectedId, history, comments,

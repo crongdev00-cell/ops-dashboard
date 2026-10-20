@@ -152,6 +152,9 @@ export default function AirtableGridView() {
                     <td className="max-w-[240px] truncate px-4 py-2 font-medium text-ink">
                       <span className="inline-flex items-center gap-1.5">
                         {r.isNew && <Sparkles size={12} className="shrink-0 text-indigo" />}
+                        {r.projectType === '국책사업' && (
+                          <span className="shrink-0 rounded bg-indigo-soft px-1.5 py-0.5 text-[10px] font-normal text-indigo">국책사업</span>
+                        )}
                         {r.contractName}
                       </span>
                     </td>
