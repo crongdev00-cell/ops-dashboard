@@ -4,6 +4,7 @@ import Sidebar, { VIEWS, AI_VIEW } from './components/Sidebar'
 import CommandPalette from './components/CommandPalette'
 import FilterBar from './components/FilterBar'
 import OverdueBanner from './components/OverdueBanner'
+import CftOverdueBanner from './components/CftOverdueBanner'
 import ActivityLogPanel from './components/ActivityLogPanel'
 import PortalSyncButton from './components/PortalSyncButton'
 import FlashButton from './components/common/FlashButton'
@@ -100,7 +101,11 @@ function Shell() {
           </div>
         </header>
 
-        <OverdueBanner onViewOverdue={() => { setFilters((f) => ({ ...f, overdueOnly: true })); setView('grid') }} />
+        {/* 배너의 건수는 부문 탭과 무관하게 전체 기준으로 센다 — "전체 확인하기"를 눌렀을 때도
+            division을 'all'로 같이 바꿔야, 지금 다른 부문 탭이 선택되어 있어서 그중 일부가
+            가려지는 바람에 "전체"라는 말과 실제로 보이는 건수가 안 맞는 모순을 막을 수 있다. */}
+        <OverdueBanner onViewOverdue={() => { setFilters((f) => ({ ...f, overdueOnly: true, division: 'all' })); setView('grid') }} />
+        <CftOverdueBanner onViewCftOverdue={() => { setFilters((f) => ({ ...f, cftOverdueOnly: true, division: 'all' })); setView('grid') }} />
         {view !== 'ai' && <FilterBar />}
 
         <main className="min-h-0 flex-1 overflow-auto p-6">

@@ -42,12 +42,13 @@ const MODEL_CONFIGS = {
     model: process.env.GEMMA_MODEL,
     maxTokens: Number(process.env.GEMMA_MAX_TOKENS) || undefined,
   },
-  exaone: {
-    label: 'EXAONE (사내)',
-    url: process.env.EXAONE_API_URL || joinChatUrl(process.env.EXAONE_API_BASE_URL),
-    key: process.env.EXAONE_API_KEY,
-    model: process.env.EXAONE_MODEL,
-    maxTokens: Number(process.env.EXAONE_MAX_TOKENS) || undefined,
+  qwen: {
+    label: 'Qwen (사내)',
+    url: process.env.QWEN_API_URL || joinChatUrl(process.env.QWEN_API_BASE_URL),
+    key: process.env.QWEN_API_KEY,
+    model: process.env.QWEN_MODEL,
+    maxTokens: Number(process.env.QWEN_MAX_TOKENS) || undefined,
+    thinking: String(process.env.QWEN_THINKING).toLowerCase() === 'true',
   },
 }
 
@@ -84,6 +85,7 @@ app.post('/api/llm/chat', async (req, res) => {
         // 매 요청에 그대로 보낼 값이 아니다 — 사내 vLLM/TGI류 게이트웨이는 비현실적으로 큰
         // max_tokens를 그대로 받으면 400/500으로 거부하는 경우가 많다 (계측기 프로젝트에서 확인된 패턴).
         max_tokens: Math.min(config.maxTokens || 4096, 4096),
+        ...(config.thinking ? { chat_template_kwargs: { enable_thinking: true } } : {}),
       }),
       signal: AbortSignal.timeout(60_000), // 사내 게이트웨이가 응답 없이 멈추면 무한 대기하지 않도록
     })
@@ -142,7 +144,7 @@ app.delete('/api/projects/:id', (req, res) => {
     if (!updated) return res.status(404).json({ error: '안건을 찾을 수 없습니다.' })
     res.json(updated)
   } catch (err) {
-    res.status(500).json({ error: `안건 제외 처리 실패: ${err.message}` })
+    res.status(500).json({ error: `안건 삭제 실패: ${err.message}` })
   }
 })
 

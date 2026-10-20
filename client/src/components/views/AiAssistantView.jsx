@@ -6,10 +6,10 @@ import { askLlm, buildRecordsContext } from '../../lib/llm'
 const MODELS = [
   { id: 'gemini', label: 'Gemini', note: '외부 API — 비식별 데이터에만 사용하세요' },
   { id: 'gemma', label: 'Gemma', note: '사내망 — 짧은 단건 질의에 적합' },
-  { id: 'exaone', label: 'EXAONE', note: '사내망 — 컨텍스트가 커서 대량 종합 분석에 적합' },
+  { id: 'qwen', label: 'Qwen', note: '사내망 — 컨텍스트가 커서 대량 종합 분석에 적합' },
 ]
 
-const SUGGESTIONS = ['전체 안건 진행 상황을 요약해줘', '병목 위험이 큰 안건 3개만 짚어줘', '부서별로 결재완료 비율을 비교해줘']
+const SUGGESTIONS = ['전체 안건 진행 상황을 요약해줘', '정체 위험이 큰 안건 3개만 짚어줘', '부서별로 결재완료 비율을 비교해줘']
 
 export default function AiAssistantView() {
   const { records, visibleRecords } = useData()

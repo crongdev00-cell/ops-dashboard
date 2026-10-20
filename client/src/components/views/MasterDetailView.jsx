@@ -34,7 +34,7 @@ export default function MasterDetailView() {
 
   const update = (patch) => updateRecord(selected.id, patch).catch((err) => setActionError(err.message))
   const remove = async () => {
-    if (!confirm('이 안건을 제외 처리할까요? (완전 삭제가 아니라 목록에서만 숨겨지며, 언제든 복원할 수 있습니다)')) return
+    if (!confirm('이 안건을 완전히 삭제할까요? 되돌릴 수 없습니다.')) return
     try {
       await deleteRecord(selected.id)
     } catch (err) {
@@ -48,7 +48,7 @@ export default function MasterDetailView() {
   const pagedRecords = records.slice(safeListPage * LIST_PAGE_SIZE, safeListPage * LIST_PAGE_SIZE + LIST_PAGE_SIZE)
 
   return (
-    <div className="grid h-full grid-cols-[minmax(0,340px)_1fr] gap-0 overflow-hidden rounded-2xl border border-line bg-surface">
+    <div className="grid h-full grid-cols-[minmax(0,340px)_1fr] grid-rows-[minmax(0,1fr)] gap-0 overflow-hidden rounded-2xl border border-line bg-surface">
       <div className="flex flex-col border-r border-line">
       <div className="flex-1 overflow-y-auto">
         {pagedRecords.map((r) => {
@@ -103,11 +103,10 @@ export default function MasterDetailView() {
           </div>
           <div className="flex items-center gap-3">
             <StatusBadge record={selected} />
-            {selected.excluded ? (
+            {selected.excluded && (
               <button onClick={restore} title="복원" className="text-slate hover:text-emerald-600"><RotateCcw size={16} /></button>
-            ) : (
-              <button onClick={remove} title="제외 처리" className="text-slate hover:text-red-600"><Trash2 size={16} /></button>
             )}
+            <button onClick={remove} title="완전 삭제" className="text-slate hover:text-red-600"><Trash2 size={16} /></button>
           </div>
         </div>
 
@@ -123,11 +122,13 @@ export default function MasterDetailView() {
         )}
 
         <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Meta icon={Building2} label="부서"><InlineText value={selected.deptName} onSave={(v) => update({ deptName: v })} /></Meta>
+          <Meta icon={User} label="BM 이름"><InlineText value={selected.bm} onSave={(v) => update({ bm: v })} /></Meta>
+          <Meta icon={Building2} label="BM 부서"><InlineText value={selected.deptName} onSave={(v) => update({ deptName: v })} /></Meta>
           <Meta icon={User} label="PM"><InlineText value={selected.pm} onSave={(v) => update({ pm: v })} /></Meta>
+          <Meta icon={Building2} label="PM 부서"><InlineText value={selected.pmDeptName} onSave={(v) => update({ pmDeptName: v })} /></Meta>
           <Meta icon={Gavel} label="심의방법">
             <select
-              value={selected.reviewMethod ?? '미실시'}
+              value={selected.reviewMethod ?? '미지정'}
               onChange={(e) => update({ reviewMethod: e.target.value })}
               className="w-full rounded-md border border-transparent bg-transparent text-sm font-medium text-ink hover:border-line focus:border-indigo focus:outline-none"
             >
@@ -135,11 +136,15 @@ export default function MasterDetailView() {
             </select>
           </Meta>
           <Meta icon={Coins} label="계약금액(백만원)">
-            <InlineText value={String(selected.amount ?? '')} onSave={(v) => {
-              const n = v.trim() === '' ? 0 : Number(v)
-              if (Number.isNaN(n)) return setActionError('계약금액은 숫자만 입력할 수 있습니다.')
-              update({ amount: n })
-            }} />
+            <InlineText
+              value={String(selected.amount ?? '')}
+              format={(v) => Number(v).toLocaleString('ko-KR')}
+              onSave={(v) => {
+                const n = v.trim() === '' ? 0 : Number(v)
+                if (Number.isNaN(n)) return setActionError('계약금액은 숫자만 입력할 수 있습니다.')
+                update({ amount: n })
+              }}
+            />
           </Meta>
           <Meta icon={Layers} label="사업부문">
             <select

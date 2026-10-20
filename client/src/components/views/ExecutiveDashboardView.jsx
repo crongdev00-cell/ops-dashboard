@@ -1,14 +1,17 @@
 import { useState } from 'react'
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
 import { AlertTriangle, Building2, User } from 'lucide-react'
 import { STAGES, computeStage } from '../../lib/stage'
-import { useData } from '../../context/DataContext'
+import { useData, needsClassification } from '../../context/DataContext'
 import StatusBadge from '../common/StatusBadge'
 import InlineText from '../common/InlineText'
 import RecordModal from '../common/RecordModal'
 import MetaTags from '../common/MetaTags'
 
-const STEP_KEYS = ['pmRequest', 'pmComplete', 'cftRequest', 'sysManage', 'notice', 'approval']
+const STEP_KEYS = [
+  'pmRequest', 'pmComplete', 'cftRequest',
+  'cftAi', 'cftSwTest', 'cftPurchase', 'cftQuality', 'cftCostAnalysis', 'cftMns', 'cftSystemEng', 'cftBizMgmt',
+  'notice', 'approval',
+]
 
 function lastTouched(r) {
   const dates = STEP_KEYS.map((k) => r[k]).filter(Boolean)
@@ -24,11 +27,10 @@ export default function ExecutiveDashboardView() {
 
   const stageCounts = Object.values(STAGES)
     .map((s) => ({ name: s.label, value: records.filter((r) => computeStage(r).code === s.code).length, color: s.color }))
-    .filter((s) => s.value > 0)
 
   const today = new Date()
   const bottlenecks = records
-    .filter((r) => { const st = computeStage(r); return st.code !== 'N' && st.code !== 'F' })
+    .filter((r) => { const st = computeStage(r); return st.code !== 'N' && st.code !== 'F' && st.code !== 'NA' && st.code !== 'U' })
     .map((r) => {
       const last = lastTouched(r)
       const days = last ? Math.round((today - new Date(last)) / 86400000) : null
@@ -42,32 +44,33 @@ export default function ExecutiveDashboardView() {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <Stat label="전체 안건" value={`${records.length}건`} />
         <Stat label="결재완료" value={`${records.filter((r) => computeStage(r).code === 'F').length}건`} />
-        <Stat label="병목 안건" value={`${bottlenecks.length}건`} accent={bottlenecks.length > 0} />
+        <Stat label="정체 안건" value={`${bottlenecks.length}건`} accent={bottlenecks.length > 0} />
+        <Stat
+          label="심의 대상 확정 필요"
+          value={`${records.filter(needsClassification).length}건`}
+          accent={records.filter(needsClassification).length > 0}
+        />
       </div>
 
-      <Card title="진행 상태별 분포">
-        <ResponsiveContainer width="100%" height={220}>
-          <PieChart>
-            <Pie data={stageCounts} dataKey="value" nameKey="name" innerRadius={54} outerRadius={84} paddingAngle={2}>
-              {stageCounts.map((s) => <Cell key={s.name} fill={s.color} />)}
-            </Pie>
-            <Tooltip />
-          </PieChart>
-        </ResponsiveContainer>
-        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1.5 px-2">
+      <Card title="진행 단계별 현황">
+        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
           {stageCounts.map((s) => (
-            <span key={s.name} className="flex items-center gap-1.5 text-xs text-slate">
-              <span className="h-2 w-2 rounded-full" style={{ background: s.color }} />{s.name} {s.value}
-            </span>
+            <div key={s.name} className="rounded-xl bg-paper px-3 py-2.5">
+              <span className="flex items-center gap-1.5 text-xs text-slate">
+                <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: s.color }} />
+                {s.name}
+              </span>
+              <p className="mt-1 text-xl font-semibold text-ink">{s.value}<span className="ml-0.5 text-xs font-normal text-slate">건</span></p>
+            </div>
           ))}
         </div>
       </Card>
 
       {bottlenecks.length > 0 && (
-        <Card title="병목 안건 경고 (14일 이상 정체)">
+        <Card title="정체 안건 경고 (14일 이상 제자리)">
           <div className="space-y-2">
             {bottlenecks.map(({ r, days }) => (
               <button key={r.id} onClick={() => setOpenId(r.id)} className="flex w-full items-center justify-between gap-3 rounded-xl bg-amber-50 px-3.5 py-2.5 text-left hover:bg-amber-100">

@@ -1,15 +1,20 @@
 import { useState } from 'react'
 import { X } from 'lucide-react'
 import { BUSINESS_DIVISIONS, OUR_DIVISION } from '../lib/businessDivision'
+import { BUSINESS_TYPES } from '../lib/businessType'
 import { useData } from '../context/DataContext'
 import { useEscapeKey } from '../lib/useEscapeKey'
 
 export default function AddRecordModal({ onClose, onCreated }) {
   const { addRecord } = useData()
   const [contractName, setContractName] = useState('')
+  const [bm, setBm] = useState('')
   const [deptName, setDeptName] = useState('')
   const [pm, setPm] = useState('')
+  const [pmDeptName, setPmDeptName] = useState('')
   const [businessDivision, setBusinessDivision] = useState(OUR_DIVISION)
+  const [businessType, setBusinessType] = useState('')
+  const [amount, setAmount] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
   useEscapeKey(onClose)
@@ -17,10 +22,20 @@ export default function AddRecordModal({ onClose, onCreated }) {
   const submit = async (e) => {
     e.preventDefault()
     if (!contractName.trim()) { setError('계약(사업)명은 필수입니다.'); return }
+    if (amount.trim() !== '' && Number.isNaN(Number(amount))) { setError('계약금액은 숫자만 입력할 수 있습니다.'); return }
     setSaving(true)
     setError(null)
     try {
-      const created = await addRecord({ contractName: contractName.trim(), deptName: deptName.trim() || null, pm: pm.trim() || null, businessDivision })
+      const created = await addRecord({
+        contractName: contractName.trim(),
+        bm: bm.trim() || null,
+        deptName: deptName.trim() || null,
+        pm: pm.trim() || null,
+        pmDeptName: pmDeptName.trim() || null,
+        businessDivision,
+        businessType: businessType || null,
+        amount: amount.trim() === '' ? null : Number(amount),
+      })
       onClose()
       onCreated?.(created)
     } catch (err) {
@@ -42,16 +57,31 @@ export default function AddRecordModal({ onClose, onCreated }) {
           <Field label="계약(사업)명 *">
             <input autoFocus value={contractName} onChange={(e) => setContractName(e.target.value)} className="w-full rounded-md border border-line bg-paper px-2.5 py-1.5 text-sm outline-none focus:border-indigo" />
           </Field>
-          <Field label="부서">
+          <Field label="BM 이름">
+            <input value={bm} onChange={(e) => setBm(e.target.value)} className="w-full rounded-md border border-line bg-paper px-2.5 py-1.5 text-sm outline-none focus:border-indigo" />
+          </Field>
+          <Field label="BM 부서">
             <input value={deptName} onChange={(e) => setDeptName(e.target.value)} className="w-full rounded-md border border-line bg-paper px-2.5 py-1.5 text-sm outline-none focus:border-indigo" />
           </Field>
           <Field label="PM">
             <input value={pm} onChange={(e) => setPm(e.target.value)} className="w-full rounded-md border border-line bg-paper px-2.5 py-1.5 text-sm outline-none focus:border-indigo" />
           </Field>
+          <Field label="PM 부서">
+            <input value={pmDeptName} onChange={(e) => setPmDeptName(e.target.value)} className="w-full rounded-md border border-line bg-paper px-2.5 py-1.5 text-sm outline-none focus:border-indigo" />
+          </Field>
           <Field label="사업부문">
             <select value={businessDivision} onChange={(e) => setBusinessDivision(e.target.value)} className="w-full rounded-md border border-line bg-paper px-2.5 py-1.5 text-sm outline-none focus:border-indigo">
               {BUSINESS_DIVISIONS.map((d) => <option key={d} value={d}>{d}</option>)}
             </select>
+          </Field>
+          <Field label="사업형태">
+            <select value={businessType} onChange={(e) => setBusinessType(e.target.value)} className="w-full rounded-md border border-line bg-paper px-2.5 py-1.5 text-sm outline-none focus:border-indigo">
+              <option value="">미지정</option>
+              {BUSINESS_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+            </select>
+          </Field>
+          <Field label="계약금액(백만원)">
+            <input value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="예: 30000" className="w-full rounded-md border border-line bg-paper px-2.5 py-1.5 text-sm outline-none focus:border-indigo" />
           </Field>
         </div>
 

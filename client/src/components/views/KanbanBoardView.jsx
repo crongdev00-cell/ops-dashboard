@@ -161,7 +161,7 @@ function VerticalBoard({ columns, onOpen, showSubStage }) {
                 {items.map((r) => {
                   const pct = stageProgressPct(r)
                   const overdueDays = r.dueDate ? daysBetween(r.dueDate, today) : null
-                  const isOverdue = overdueDays !== null && overdueDays > 0 && stage.code !== 'F'
+                  const isOverdue = overdueDays !== null && overdueDays > 0 && stage.code !== 'F' && stage.code !== 'N' && stage.code !== 'NA' && stage.code !== 'U'
                   return (
                     <tr key={r.id} onClick={() => onOpen(r.id)} className="group cursor-pointer border-t border-line hover:bg-paper">
                       <td className="p-0">

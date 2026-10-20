@@ -28,6 +28,8 @@ export function buildRecordsContext(records) {
     businessDivision: r.businessDivision, isNew: r.isNew, excluded: r.excluded,
     amount: r.amount, reviewMethod: r.reviewMethod, stage: computeStage(r).label, dueDate: r.dueDate,
     pmRequest: r.pmRequest, pmComplete: r.pmComplete, cftRequest: r.cftRequest,
-    sysManage: r.sysManage, notice: r.notice, approval: r.approval,
+    cftAi: r.cftAi, cftSwTest: r.cftSwTest, cftPurchase: r.cftPurchase, cftQuality: r.cftQuality,
+    cftCostAnalysis: r.cftCostAnalysis, cftMns: r.cftMns, cftSystemEng: r.cftSystemEng, cftBizMgmt: r.cftBizMgmt,
+    notice: r.notice, approval: r.approval,
   }))
 }

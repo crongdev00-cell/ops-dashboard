@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 
 // 클릭하면 텍스트 필드로 바뀌고, Enter/blur 시 저장, Esc 시 취소.
-export default function InlineText({ value, onSave, placeholder = '-', className = '' }) {
+// format: 편집 중이 아닐 때만 적용되는 표시 전용 변환(예: 금액에 천단위 콤마) — 저장되는 값(draft)은 항상 원본 그대로라 파싱이 꼬이지 않는다.
+export default function InlineText({ value, onSave, placeholder = '-', className = '', format }) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(value ?? '')
 
@@ -38,9 +39,9 @@ export default function InlineText({ value, onSave, placeholder = '-', className
       tabIndex={0}
       onClick={() => setEditing(true)}
       onKeyDown={(e) => e.key === 'Enter' && setEditing(true)}
-      className={`cursor-text rounded-md px-1.5 py-0.5 -mx-1.5 hover:bg-paper hover:ring-1 hover:ring-line ${className}`}
+      className={`block w-full cursor-text rounded-md px-1.5 py-0.5 -mx-1.5 hover:bg-paper hover:ring-1 hover:ring-line ${className}`}
     >
-      {value || <span className="text-slate">{placeholder}</span>}
+      {value ? (format ? format(value) : value) : <span className="text-slate">{placeholder}</span>}
     </span>
   )
 }

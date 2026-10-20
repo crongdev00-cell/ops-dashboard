@@ -13,11 +13,14 @@ const PAGE_SIZE = 100
 const ALL_COLS = [
   { key: 'no', label: 'No.' },
   { key: 'contractName', label: '계약(사업)명' },
-  { key: 'deptName', label: '부서' },
+  { key: 'bm', label: 'BM 이름' },
+  { key: 'deptName', label: 'BM 부서' },
   { key: 'pm', label: 'PM' },
+  { key: 'pmDeptName', label: 'PM 부서' },
   { key: 'reviewMethod', label: '심의방법' },
   { key: 'stage', label: '상태' },
   { key: 'progress', label: '진행률' },
+  { key: 'amount', label: '계약금액(백만원)' },
   { key: 'pmRequest', label: 'PM요청' },
   { key: 'approval', label: '결재완료' },
 ]
@@ -153,9 +156,11 @@ export default function AirtableGridView() {
                       </span>
                     </td>
                   )}
+                  {visibleCols.has('bm') && <td className="px-4 py-2 text-slate">{r.bm || '미지정'}</td>}
                   {visibleCols.has('deptName') && <td className="px-4 py-2 text-slate">{r.deptName || '미지정'}</td>}
                   {visibleCols.has('pm') && <td className="px-4 py-2 text-slate">{r.pm || '미지정'}</td>}
-                  {visibleCols.has('reviewMethod') && <td className="px-4 py-2 text-slate">{r.reviewMethod ?? '미실시'}</td>}
+                  {visibleCols.has('pmDeptName') && <td className="px-4 py-2 text-slate">{r.pmDeptName || '미지정'}</td>}
+                  {visibleCols.has('reviewMethod') && <td className="px-4 py-2 text-slate">{r.reviewMethod ?? '미지정'}</td>}
                   {visibleCols.has('stage') && <td className="px-4 py-2"><StatusBadge record={r} size="sm" /></td>}
                   {visibleCols.has('progress') && (
                     <td className="px-4 py-2">
@@ -167,6 +172,7 @@ export default function AirtableGridView() {
                       </div>
                     </td>
                   )}
+                  {visibleCols.has('amount') && <td className="px-4 py-2 text-right text-slate tabular-nums">{r.amount != null ? Number(r.amount).toLocaleString('ko-KR') : '-'}</td>}
                   {visibleCols.has('pmRequest') && <td className="px-4 py-2 text-slate">{formatDate(r.pmRequest)}</td>}
                   {visibleCols.has('approval') && <td className="px-4 py-2 text-slate">{formatDate(r.approval)}</td>}
                 </tr>

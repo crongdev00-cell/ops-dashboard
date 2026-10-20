@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { ChevronLeft, ChevronRight, CalendarDays, GanttChartSquare, Building2, ListChecks, Sparkles } from 'lucide-react'
 import { useData } from '../../context/DataContext'
 import { computeStage } from '../../lib/stage'
@@ -12,7 +12,14 @@ const DATE_KEYS = [
   { key: 'pmRequest', label: 'PM요청' },
   { key: 'pmComplete', label: 'PM완료' },
   { key: 'cftRequest', label: 'CFT요청' },
-  { key: 'sysManage', label: '체계관리' },
+  { key: 'cftAi', label: 'CFT-AI' },
+  { key: 'cftSwTest', label: 'CFT-S/W시험' },
+  { key: 'cftPurchase', label: 'CFT-개발구매' },
+  { key: 'cftQuality', label: 'CFT-개발품질' },
+  { key: 'cftCostAnalysis', label: 'CFT-원가분석' },
+  { key: 'cftMns', label: 'CFT-M&S' },
+  { key: 'cftSystemEng', label: 'CFT-체계공학' },
+  { key: 'cftBizMgmt', label: 'CFT-사업관리' },
   { key: 'notice', label: '안내' },
   { key: 'approval', label: '결재완료' },
 ]
@@ -21,12 +28,14 @@ const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토']
 export default function ScheduleView() {
   const [mode, setMode] = useState('timeline')
   return (
-    <div>
-      <div className="mb-4 flex gap-1 rounded-lg border border-line bg-paper p-1" style={{ width: 'fit-content' }}>
+    <div className="flex h-full flex-col">
+      <div className="mb-4 flex shrink-0 gap-1 rounded-lg border border-line bg-paper p-1" style={{ width: 'fit-content' }}>
         <ModeButton active={mode === 'timeline'} icon={GanttChartSquare} label="타임라인" onClick={() => setMode('timeline')} />
         <ModeButton active={mode === 'calendar'} icon={CalendarDays} label="달력" onClick={() => setMode('calendar')} />
       </div>
-      {mode === 'timeline' ? <TimelineMode /> : <CalendarMode />}
+      <div className="min-h-0 flex-1">
+        {mode === 'timeline' ? <TimelineMode /> : <CalendarMode />}
+      </div>
     </div>
   )
 }
@@ -49,10 +58,18 @@ function ModeButton({ active, icon: Icon, label, onClick }) {
 const LIST_CAP = 200
 
 function TimelineMode() {
-  const { visibleRecords: records, selectedId, setSelectedId, updateRecord } = useData()
+  const { visibleRecords: records, selectedId, setSelectedId, updateRecord, markSeen } = useData()
   const withDates = records.filter((r) => DATE_KEYS.some(({ key }) => r[key]))
   const cappedList = records.slice(0, LIST_CAP)
   const cappedTimeline = withDates.slice(0, LIST_CAP)
+
+  // 목록·상세 보기와 똑같이, 왼쪽 목록에서 신규 안건을 선택하면(모달 없이도) "확인함" 처리한다 —
+  // 그렇지 않으면 여기서는 영원히 ✨ 표시가 안 없어진다.
+  const selected = records.find((r) => r.id === selectedId)
+  useEffect(() => {
+    if (selected?.isNew) markSeen(selected.id)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selected?.id])
 
   if (withDates.length === 0) {
     return <p className="rounded-2xl border border-line bg-surface p-6 text-sm text-slate">진행 날짜가 입력된 안건이 없어 타임라인을 표시할 수 없습니다.</p>
@@ -65,7 +82,7 @@ function TimelineMode() {
   const pct = (iso) => ((new Date(iso) - new Date(min)) / span) * 100
 
   return (
-    <div className="grid h-full grid-cols-[minmax(0,300px)_1fr] gap-0 overflow-hidden rounded-2xl border border-line bg-surface">
+    <div className="grid h-full grid-cols-[minmax(0,300px)_1fr] grid-rows-[minmax(0,1fr)] gap-0 overflow-hidden rounded-2xl border border-line bg-surface">
       <div className="overflow-y-auto border-r border-line">
         {cappedList.map((r) => (
           <button
