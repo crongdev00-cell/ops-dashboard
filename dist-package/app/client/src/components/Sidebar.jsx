@@ -22,7 +22,7 @@ export default function Sidebar({ view, onChange, count }) {
         </span>
         <div className="leading-tight">
           <p className="text-sm font-semibold text-ink">개발심의회</p>
-          <p className="text-[11px] text-slate">진행 현황판</p>
+          <p className="text-[11px] text-slate">대시보드</p>
         </div>
       </div>
 

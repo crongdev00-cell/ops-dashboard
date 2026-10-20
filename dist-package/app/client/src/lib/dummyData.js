@@ -19,7 +19,7 @@ export function createDummyData() {
       contractMethod: '수의계약', businessType: '선행연구', deptName: '연구기획팀', pmDeptName: '연구기획팀', pm: '김도현', bm: '이현우',
       labName: '에너지연구소', amount: 3200, contractDate: daysAgo(200), dueDate: daysFromNow(160),
       reviewMethod: '미실시', chair: null, reviewDate: null, reviewResult: null,
-      pmRequest: null, pmDue: null, pmComplete: null, cftRequest: null, sysManage: null, notice: null, approval: null,
+      pmRequest: null, pmDue: null, pmComplete: null, cftRequest: null, cftAi: null, cftSwTest: null, cftPurchase: null, cftQuality: null, cftCostAnalysis: null, cftMns: null, cftSystemEng: null, cftBizMgmt: null, notice: null, approval: null,
       note: '연구소 내부 검토 단계, 심의 일정 미확정',
     }),
     rec({
@@ -27,7 +27,7 @@ export function createDummyData() {
       contractMethod: '일반경쟁계약', businessType: '수탁연구', deptName: '신뢰성시험팀', pmDeptName: '신뢰성시험팀', pm: '한소희', bm: '오태양',
       labName: '신뢰성연구소', amount: 1800, contractDate: daysAgo(160), dueDate: daysFromNow(220),
       reviewMethod: '미실시', chair: null, reviewDate: null, reviewResult: null,
-      pmRequest: null, pmDue: null, pmComplete: null, cftRequest: null, sysManage: null, notice: null, approval: null,
+      pmRequest: null, pmDue: null, pmComplete: null, cftRequest: null, cftAi: null, cftSwTest: null, cftPurchase: null, cftQuality: null, cftCostAnalysis: null, cftMns: null, cftSystemEng: null, cftBizMgmt: null, notice: null, approval: null,
       note: '예산 확정 대기 중',
     }),
     rec({
@@ -35,7 +35,7 @@ export function createDummyData() {
       contractMethod: '수의계약', businessType: '민수', deptName: '구매전략팀', pmDeptName: '체계개발팀', pm: '배지훈', bm: '박준혁',
       labName: '생산기술연구소', amount: 150, contractDate: daysAgo(90), dueDate: daysFromNow(60),
       reviewMethod: '미실시', chair: null, reviewDate: null, reviewResult: null,
-      pmRequest: null, pmDue: null, pmComplete: null, cftRequest: null, sysManage: null, notice: null, approval: null,
+      pmRequest: null, pmDue: null, pmComplete: null, cftRequest: null, cftAi: null, cftSwTest: null, cftPurchase: null, cftQuality: null, cftCostAnalysis: null, cftMns: null, cftSystemEng: null, cftBizMgmt: null, notice: null, approval: null,
       note: '타 부서 협의 진행 중 (소규모 파일럿)',
     }),
 
@@ -45,7 +45,7 @@ export function createDummyData() {
       contractMethod: '일반확정계약', businessType: '민수', deptName: '전장시스템1팀', pmDeptName: '전장시스템1팀', pm: '이서연', bm: '최유나',
       labName: '에너지연구소', amount: 2100, contractDate: daysAgo(60), dueDate: daysFromNow(120),
       reviewMethod: '서면보고', chair: '본부장', reviewDate: daysAgo(12), reviewResult: '조건부승인',
-      pmRequest: null, pmDue: null, pmComplete: null, cftRequest: null, sysManage: null, notice: null, approval: null,
+      pmRequest: null, pmDue: null, pmComplete: null, cftRequest: null, cftAi: null, cftSwTest: null, cftPurchase: null, cftQuality: null, cftCostAnalysis: null, cftMns: null, cftSystemEng: null, cftBizMgmt: null, notice: null, approval: null,
       note: 'PM 배정 완료, 착수 준비 중',
     }),
     rec({
@@ -53,7 +53,7 @@ export function createDummyData() {
       contractMethod: '수의계약', businessType: '선행연구', deptName: '전장시스템2팀', pmDeptName: '전장시스템2팀', pm: '정민석', bm: '한소희',
       labName: '통신연구소', amount: 1650, contractDate: daysAgo(200), dueDate: daysFromNow(90),
       reviewMethod: '대면보고(부문장)', chair: '부문장', reviewDate: daysAgo(150), reviewResult: '승인',
-      pmRequest: null, pmDue: null, pmComplete: null, cftRequest: null, sysManage: null, notice: null, approval: null,
+      pmRequest: null, pmDue: null, pmComplete: null, cftRequest: null, cftAi: null, cftSwTest: null, cftPurchase: null, cftQuality: null, cftCostAnalysis: null, cftMns: null, cftSystemEng: null, cftBizMgmt: null, notice: null, approval: null,
       note: '승인된 지 오래됐는데 PM 요청이 안 걸림, 확인 필요',
     }),
 
@@ -63,7 +63,7 @@ export function createDummyData() {
       contractMethod: '수의계약', businessType: '선행연구', deptName: 'SW플랫폼팀', pmDeptName: 'AI융합연구소', pm: '최유나', bm: '김도현',
       labName: 'AI연구소', amount: 4200, contractDate: daysAgo(40), dueDate: daysFromNow(150),
       reviewMethod: '대면보고(연구개발본부장)', chair: '대표이사', reviewDate: daysAgo(20), reviewResult: '승인',
-      pmRequest: daysAgo(5), pmDue: daysFromNow(9), pmComplete: null, cftRequest: null, sysManage: null, notice: null, approval: null,
+      pmRequest: daysAgo(5), pmDue: daysFromNow(9), pmComplete: null, cftRequest: null, cftAi: null, cftSwTest: null, cftPurchase: null, cftQuality: null, cftCostAnalysis: null, cftMns: null, cftSystemEng: null, cftBizMgmt: null, notice: null, approval: null,
       note: 'PM 작성 진행 중 (착수 5일차, 정상 진행)',
     }),
     rec({
@@ -71,7 +71,7 @@ export function createDummyData() {
       contractMethod: '수의계약', businessType: '민수', deptName: '전장시스템1팀', pmDeptName: '전장시스템1팀', pm: '박준혁', bm: '이서연',
       labName: '파워트레인연구소', amount: 2750, contractDate: daysAgo(90), dueDate: daysAgo(20),
       reviewMethod: '서면보고', chair: '1본부장', reviewDate: daysAgo(70), reviewResult: '승인',
-      pmRequest: daysAgo(45), pmDue: daysAgo(32), pmComplete: null, cftRequest: null, sysManage: null, notice: null, approval: null,
+      pmRequest: daysAgo(45), pmDue: daysAgo(32), pmComplete: null, cftRequest: null, cftAi: null, cftSwTest: null, cftPurchase: null, cftQuality: null, cftCostAnalysis: null, cftMns: null, cftSystemEng: null, cftBizMgmt: null, notice: null, approval: null,
       note: 'PM 작성 45일째 정체, 완료기한도 이미 지남',
     }),
     rec({
@@ -79,7 +79,7 @@ export function createDummyData() {
       contractMethod: '일반경쟁계약', businessType: '수탁연구', deptName: 'AI융합연구소', pmDeptName: 'AI융합연구소', pm: '오태양', bm: '정민석',
       labName: '광학연구소', amount: 3800, contractDate: daysAgo(60), dueDate: daysFromNow(200),
       reviewMethod: '대면보고(부문장)', chair: '부문장', reviewDate: daysAgo(40), reviewResult: '승인',
-      pmRequest: daysAgo(9), pmDue: daysFromNow(5), pmComplete: null, cftRequest: null, sysManage: null, notice: null, approval: null,
+      pmRequest: daysAgo(9), pmDue: daysFromNow(5), pmComplete: null, cftRequest: null, cftAi: null, cftSwTest: null, cftPurchase: null, cftQuality: null, cftCostAnalysis: null, cftMns: null, cftSystemEng: null, cftBizMgmt: null, notice: null, approval: null,
       note: '해외 협력사 협의 병행 (정체 임계값 근처)',
     }),
 
@@ -89,7 +89,7 @@ export function createDummyData() {
       contractMethod: '수의계약', businessType: '민수', deptName: '전장시스템2팀', pmDeptName: '전장시스템1팀', pm: '김도현', bm: '배지훈',
       labName: '열관리연구소', amount: 1980, contractDate: daysAgo(100), dueDate: daysAgo(40),
       reviewMethod: '서면보고', chair: '2본부장', reviewDate: daysAgo(80), reviewResult: '승인',
-      pmRequest: daysAgo(35), pmDue: daysAgo(20), pmComplete: daysAgo(22), cftRequest: null, sysManage: null, notice: null, approval: null,
+      pmRequest: daysAgo(35), pmDue: daysAgo(20), pmComplete: daysAgo(22), cftRequest: null, cftAi: null, cftSwTest: null, cftPurchase: null, cftQuality: null, cftCostAnalysis: null, cftMns: null, cftSystemEng: null, cftBizMgmt: null, notice: null, approval: null,
       note: 'PM 작성 완료, CFT 요청 대기 (22일째)',
     }),
     rec({
@@ -97,7 +97,7 @@ export function createDummyData() {
       contractMethod: '수의계약', businessType: '민수', deptName: '신뢰성시험팀', pmDeptName: '신뢰성시험팀', pm: '이서연', bm: '한소희',
       labName: '신뢰성연구소', amount: 1120, contractDate: daysAgo(50), dueDate: daysFromNow(180),
       reviewMethod: '대면보고(연구개발본부장)', chair: '본부장', reviewDate: daysAgo(30), reviewResult: '승인',
-      pmRequest: daysAgo(10), pmDue: daysFromNow(4), pmComplete: daysAgo(4), cftRequest: null, sysManage: null, notice: null, approval: null,
+      pmRequest: daysAgo(10), pmDue: daysFromNow(4), pmComplete: daysAgo(4), cftRequest: null, cftAi: null, cftSwTest: null, cftPurchase: null, cftQuality: null, cftCostAnalysis: null, cftMns: null, cftSystemEng: null, cftBizMgmt: null, notice: null, approval: null,
       note: null,
     }),
 
@@ -108,7 +108,7 @@ export function createDummyData() {
       contractMethod: '수의계약', businessType: '선행연구', deptName: 'AI융합연구소', pmDeptName: 'AI융합연구소', pm: '최유나', bm: '오태양',
       labName: 'AI연구소', amount: 2600, contractDate: daysAgo(110), dueDate: daysAgo(15),
       reviewMethod: '서면보고', chair: '부문장', reviewDate: daysAgo(90), reviewResult: '승인',
-      pmRequest: daysAgo(45), pmDue: daysAgo(30), pmComplete: daysAgo(35), cftRequest: daysAgo(28), sysManage: null, notice: null, approval: null,
+      pmRequest: daysAgo(45), pmDue: daysAgo(30), pmComplete: daysAgo(35), cftRequest: daysAgo(28), cftAi: null, cftSwTest: null, cftPurchase: null, cftQuality: null, cftCostAnalysis: null, cftMns: null, cftSystemEng: null, cftBizMgmt: null, notice: null, approval: null,
       note: 'CFT 검토 28일째 정체 (긴 안건명 UI 확인용)',
     }),
     rec({
@@ -116,7 +116,7 @@ export function createDummyData() {
       contractMethod: '수의계약', businessType: '민수', deptName: '전장시스템1팀', pmDeptName: '전장시스템2팀', pm: '정민석', bm: '박준혁',
       labName: '에너지연구소', amount: 1450, contractDate: daysAgo(60), dueDate: daysFromNow(210),
       reviewMethod: '대면보고(연구개발본부장)', chair: '대표이사', reviewDate: daysAgo(40), reviewResult: '승인',
-      pmRequest: daysAgo(20), pmDue: daysAgo(6), pmComplete: daysAgo(12), cftRequest: daysAgo(6), sysManage: null, notice: null, approval: null,
+      pmRequest: daysAgo(20), pmDue: daysAgo(6), pmComplete: daysAgo(12), cftRequest: daysAgo(6), cftAi: null, cftSwTest: null, cftPurchase: null, cftQuality: null, cftCostAnalysis: null, cftMns: null, cftSystemEng: null, cftBizMgmt: null, notice: null, approval: null,
       note: null,
     }),
 
@@ -126,7 +126,7 @@ export function createDummyData() {
       contractMethod: '수의계약', businessType: '민수', deptName: '구매전략팀', pmDeptName: '구매전략팀', pm: '배지훈', bm: '최유나',
       labName: '경영연구소', amount: 780, contractDate: daysAgo(130), dueDate: daysAgo(60),
       reviewMethod: '서면보고', chair: '1본부장', reviewDate: daysAgo(110), reviewResult: '승인',
-      pmRequest: daysAgo(70), pmDue: daysAgo(56), pmComplete: daysAgo(60), cftRequest: daysAgo(55), sysManage: daysAgo(50), notice: null, approval: null,
+      pmRequest: daysAgo(70), pmDue: daysAgo(56), pmComplete: daysAgo(60), cftRequest: daysAgo(55), cftAi: daysAgo(50), cftSwTest: daysAgo(50), cftPurchase: daysAgo(50), cftQuality: daysAgo(50), cftCostAnalysis: daysAgo(50), cftMns: daysAgo(50), cftSystemEng: daysAgo(50), cftBizMgmt: daysAgo(50), notice: null, approval: null,
       note: '체계관리 검토 50일째로 가장 오래 정체된 안건',
     }),
     rec({
@@ -134,7 +134,7 @@ export function createDummyData() {
       contractMethod: '수의계약', businessType: '선행연구', deptName: 'SW플랫폼팀', pmDeptName: 'SW플랫폼팀', pm: '한소희', bm: '김도현',
       labName: 'AI연구소', amount: 3500, contractDate: daysAgo(70), dueDate: daysFromNow(140),
       reviewMethod: '대면보고(부문장)', chair: '부문장', reviewDate: daysAgo(50), reviewResult: '승인',
-      pmRequest: daysAgo(25), pmDue: daysAgo(11), pmComplete: daysAgo(20), cftRequest: daysAgo(15), sysManage: daysAgo(9), notice: null, approval: null,
+      pmRequest: daysAgo(25), pmDue: daysAgo(11), pmComplete: daysAgo(20), cftRequest: daysAgo(15), cftAi: daysAgo(9), cftSwTest: daysAgo(9), cftPurchase: daysAgo(9), cftQuality: daysAgo(9), cftCostAnalysis: daysAgo(9), cftMns: daysAgo(9), cftSystemEng: daysAgo(9), cftBizMgmt: daysAgo(9), notice: null, approval: null,
       note: null,
     }),
 
@@ -144,7 +144,7 @@ export function createDummyData() {
       contractMethod: '일반경쟁계약', businessType: '수탁연구', deptName: '품질보증팀', pmDeptName: '신뢰성시험팀', pm: '오태양', bm: '이서연',
       labName: '에너지연구소', amount: 2900, contractDate: daysAgo(90), dueDate: daysAgo(10),
       reviewMethod: '서면보고', chair: '2본부장', reviewDate: daysAgo(70), reviewResult: '승인',
-      pmRequest: daysAgo(40), pmDue: daysAgo(26), pmComplete: daysAgo(35), cftRequest: daysAgo(30), sysManage: daysAgo(25), notice: daysAgo(18), approval: null,
+      pmRequest: daysAgo(40), pmDue: daysAgo(26), pmComplete: daysAgo(35), cftRequest: daysAgo(30), cftAi: daysAgo(25), cftSwTest: daysAgo(25), cftPurchase: daysAgo(25), cftQuality: daysAgo(25), cftCostAnalysis: daysAgo(25), cftMns: daysAgo(25), cftSystemEng: daysAgo(25), cftBizMgmt: daysAgo(25), notice: daysAgo(18), approval: null,
       note: '안내 완료, 결재 대기 18일째',
     }),
     rec({
@@ -152,7 +152,7 @@ export function createDummyData() {
       contractMethod: '수의계약', businessType: '민수', deptName: 'SW플랫폼팀', pmDeptName: 'SW플랫폼팀', pm: '박준혁', bm: '정민석',
       labName: 'UX연구소', amount: 2200, contractDate: daysAgo(60), dueDate: daysAgo(5),
       reviewMethod: '대면보고(연구개발본부장)', chair: '본부장', reviewDate: daysAgo(45), reviewResult: '승인',
-      pmRequest: daysAgo(25), pmDue: daysAgo(11), pmComplete: daysAgo(20), cftRequest: daysAgo(15), sysManage: daysAgo(10), notice: daysAgo(3), approval: null,
+      pmRequest: daysAgo(25), pmDue: daysAgo(11), pmComplete: daysAgo(20), cftRequest: daysAgo(15), cftAi: daysAgo(10), cftSwTest: daysAgo(10), cftPurchase: daysAgo(10), cftQuality: daysAgo(10), cftCostAnalysis: daysAgo(10), cftMns: daysAgo(10), cftSystemEng: daysAgo(10), cftBizMgmt: daysAgo(10), notice: daysAgo(3), approval: null,
       note: '거의 다 왔는데 완료기한을 5일 넘김',
     }),
 
@@ -162,7 +162,7 @@ export function createDummyData() {
       contractMethod: '수의계약', businessType: '선행연구', deptName: '전장시스템2팀', pmDeptName: '전장시스템2팀', pm: '최유나', bm: '한소희',
       labName: '통신연구소', amount: 3100, contractDate: daysAgo(165), dueDate: daysAgo(90),
       reviewMethod: '서면보고', chair: '부문장', reviewDate: daysAgo(158), reviewResult: '승인',
-      pmRequest: daysAgo(150), pmDue: daysAgo(136), pmComplete: daysAgo(140), cftRequest: daysAgo(132), sysManage: daysAgo(124), notice: daysAgo(118), approval: daysAgo(110),
+      pmRequest: daysAgo(150), pmDue: daysAgo(136), pmComplete: daysAgo(140), cftRequest: daysAgo(132), cftAi: daysAgo(124), cftSwTest: daysAgo(124), cftPurchase: daysAgo(124), cftQuality: daysAgo(124), cftCostAnalysis: daysAgo(124), cftMns: daysAgo(124), cftSystemEng: daysAgo(124), cftBizMgmt: daysAgo(124), notice: daysAgo(118), approval: daysAgo(110),
       note: '결재 완료, 사후관리 단계',
     }),
     rec({
@@ -170,7 +170,7 @@ export function createDummyData() {
       contractMethod: '수의계약', businessType: '민수', deptName: '구매전략팀', pmDeptName: '체계개발팀', pm: '김도현', bm: '오태양',
       labName: '생산기술연구소', amount: 1350, contractDate: daysAgo(245), dueDate: daysAgo(170),
       reviewMethod: '대면보고(연구개발본부장)', chair: '대표이사', reviewDate: daysAgo(238), reviewResult: '승인',
-      pmRequest: daysAgo(230), pmDue: daysAgo(216), pmComplete: daysAgo(220), cftRequest: daysAgo(212), sysManage: daysAgo(204), notice: daysAgo(196), approval: daysAgo(190),
+      pmRequest: daysAgo(230), pmDue: daysAgo(216), pmComplete: daysAgo(220), cftRequest: daysAgo(212), cftAi: daysAgo(204), cftSwTest: daysAgo(204), cftPurchase: daysAgo(204), cftQuality: daysAgo(204), cftCostAnalysis: daysAgo(204), cftMns: daysAgo(204), cftSystemEng: daysAgo(204), cftBizMgmt: daysAgo(204), notice: daysAgo(196), approval: daysAgo(190),
       note: null,
     }),
     rec({
@@ -178,7 +178,7 @@ export function createDummyData() {
       contractMethod: '수의계약', businessType: '민수', deptName: '신뢰성시험팀', pmDeptName: '신뢰성시험팀', pm: '이서연', bm: '배지훈',
       labName: '신뢰성연구소', amount: 12000, contractDate: daysAgo(315), dueDate: daysAgo(240),
       reviewMethod: '서면보고', chair: '1본부장', reviewDate: daysAgo(308), reviewResult: '승인',
-      pmRequest: daysAgo(300), pmDue: daysAgo(286), pmComplete: daysAgo(290), cftRequest: daysAgo(282), sysManage: daysAgo(274), notice: daysAgo(266), approval: daysAgo(260),
+      pmRequest: daysAgo(300), pmDue: daysAgo(286), pmComplete: daysAgo(290), cftRequest: daysAgo(282), cftAi: daysAgo(274), cftSwTest: daysAgo(274), cftPurchase: daysAgo(274), cftQuality: daysAgo(274), cftCostAnalysis: daysAgo(274), cftMns: daysAgo(274), cftSystemEng: daysAgo(274), cftBizMgmt: daysAgo(274), notice: daysAgo(266), approval: daysAgo(260),
       note: '결재 완료 (대형 장비 CAPEX)',
     }),
     rec({
@@ -186,7 +186,7 @@ export function createDummyData() {
       contractMethod: '수의계약', businessType: '민수', deptName: '연구기획팀', pmDeptName: '연구기획팀', pm: '정민석', bm: '최유나',
       labName: '경영연구소', amount: 890, contractDate: daysAgo(375), dueDate: daysAgo(300),
       reviewMethod: '대면보고(부문장)', chair: '부문장', reviewDate: daysAgo(368), reviewResult: '승인',
-      pmRequest: daysAgo(360), pmDue: daysAgo(346), pmComplete: daysAgo(350), cftRequest: daysAgo(342), sysManage: daysAgo(334), notice: daysAgo(326), approval: daysAgo(320),
+      pmRequest: daysAgo(360), pmDue: daysAgo(346), pmComplete: daysAgo(350), cftRequest: daysAgo(342), cftAi: daysAgo(334), cftSwTest: daysAgo(334), cftPurchase: daysAgo(334), cftQuality: daysAgo(334), cftCostAnalysis: daysAgo(334), cftMns: daysAgo(334), cftSystemEng: daysAgo(334), cftBizMgmt: daysAgo(334), notice: daysAgo(326), approval: daysAgo(320),
       note: '결재 완료',
     }),
 
@@ -202,7 +202,7 @@ export function createDummyData() {
       portalKey: 'KT-DEMO-021', isNew: true, businessDivision: null,
       autoClassification: '대면보고(연구개발본부장)', classificationReason: '무기체계 300억원 이상', classificationConfirmed: false, isSonchunggeum: false,
       reviewMethod: '미실시', chair: null, reviewDate: null, reviewResult: null,
-      pmRequest: null, pmDue: null, pmComplete: null, cftRequest: null, sysManage: null, notice: null, approval: null,
+      pmRequest: null, pmDue: null, pmComplete: null, cftRequest: null, cftAi: null, cftSwTest: null, cftPurchase: null, cftQuality: null, cftCostAnalysis: null, cftMns: null, cftSystemEng: null, cftBizMgmt: null, notice: null, approval: null,
       note: '방금 포털 동기화로 들어온 예시 — 1차 분류(추천 분류) 확정 전 상태',
     }),
     rec({
@@ -212,7 +212,7 @@ export function createDummyData() {
       portalKey: 'KT-DEMO-022', isNew: true, businessDivision: null,
       autoClassification: '대면보고(연구개발본부장)', classificationReason: '핵심기술 150억원 이상', classificationConfirmed: false, isSonchunggeum: false,
       reviewMethod: '미실시', chair: null, reviewDate: null, reviewResult: null,
-      pmRequest: null, pmDue: null, pmComplete: null, cftRequest: null, sysManage: null, notice: null, approval: null,
+      pmRequest: null, pmDue: null, pmComplete: null, cftRequest: null, cftAi: null, cftSwTest: null, cftPurchase: null, cftQuality: null, cftCostAnalysis: null, cftMns: null, cftSystemEng: null, cftBizMgmt: null, notice: null, approval: null,
       note: null,
     }),
     rec({
@@ -222,7 +222,7 @@ export function createDummyData() {
       portalKey: 'KT-DEMO-023', isNew: true, businessDivision: null,
       autoClassification: '서면보고', classificationReason: '기준 금액 미만 (서면보고 기본 적용)', classificationConfirmed: false, isSonchunggeum: false,
       reviewMethod: '미실시', chair: null, reviewDate: null, reviewResult: null,
-      pmRequest: null, pmDue: null, pmComplete: null, cftRequest: null, sysManage: null, notice: null, approval: null,
+      pmRequest: null, pmDue: null, pmComplete: null, cftRequest: null, cftAi: null, cftSwTest: null, cftPurchase: null, cftQuality: null, cftCostAnalysis: null, cftMns: null, cftSystemEng: null, cftBizMgmt: null, notice: null, approval: null,
       note: null,
     }),
     rec({
@@ -232,7 +232,7 @@ export function createDummyData() {
       portalKey: 'KT-DEMO-024', isNew: true, businessDivision: null,
       autoClassification: '서면보고', classificationReason: '기준 금액 미만 (서면보고 기본 적용)', classificationConfirmed: false, isSonchunggeum: false,
       reviewMethod: '미실시', chair: null, reviewDate: null, reviewResult: null,
-      pmRequest: null, pmDue: null, pmComplete: null, cftRequest: null, sysManage: null, notice: null, approval: null,
+      pmRequest: null, pmDue: null, pmComplete: null, cftRequest: null, cftAi: null, cftSwTest: null, cftPurchase: null, cftQuality: null, cftCostAnalysis: null, cftMns: null, cftSystemEng: null, cftBizMgmt: null, notice: null, approval: null,
       note: '사업형태가 "운영유지(정비/수리부속)"라 미실시 참고 문구가 같이 뜨는 예시',
     }),
     rec({
@@ -242,7 +242,7 @@ export function createDummyData() {
       portalKey: 'KT-DEMO-025', isNew: false, businessDivision: '미래전장사업부문',
       autoClassification: '대면보고(연구개발본부장)', classificationReason: '무기체계 300억원 이상', classificationConfirmed: true, isSonchunggeum: true,
       reviewMethod: '대면보고(부문장)', chair: '부문장', reviewDate: daysAgo(15), reviewResult: '승인',
-      pmRequest: daysAgo(10), pmDue: daysFromNow(4), pmComplete: null, cftRequest: null, sysManage: null, notice: null, approval: null,
+      pmRequest: daysAgo(10), pmDue: daysFromNow(4), pmComplete: null, cftRequest: null, cftAi: null, cftSwTest: null, cftPurchase: null, cftQuality: null, cftCostAnalysis: null, cftMns: null, cftSystemEng: null, cftBizMgmt: null, notice: null, approval: null,
       note: '손충금 체크 후 이미 확정까지 끝낸 예시 — "확정됨" 배지 상태',
     }),
   ]

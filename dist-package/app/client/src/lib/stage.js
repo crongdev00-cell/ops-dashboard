@@ -19,11 +19,23 @@ export const FACE_TO_FACE_DEFAULT = '대면보고(연구개발본부장)'
 export const REVIEW_METHODS = ['미지정', '미실시', '서면보고', FACE_TO_FACE_SONCHUNGGEUM, FACE_TO_FACE_DEFAULT, '대상아님']
 const FACE_TO_FACE_METHODS = new Set([FACE_TO_FACE_SONCHUNGGEUM, FACE_TO_FACE_DEFAULT])
 
+// [유관부서(CFT)] 검토현황 — 8개 부서가 전부 완료돼야 다음 단계(검토완료)로 넘어간다.
+export const CFT_DEPT_FIELDS = [
+  { key: 'cftAi', label: 'AI' },
+  { key: 'cftSwTest', label: 'S/W 시험' },
+  { key: 'cftPurchase', label: '개발 구매' },
+  { key: 'cftQuality', label: '개발 품질' },
+  { key: 'cftCostAnalysis', label: '원가 분석' },
+  { key: 'cftMns', label: 'M&S' },
+  { key: 'cftSystemEng', label: '체계공학' },
+  { key: 'cftBizMgmt', label: '사업관리' },
+]
+
 export const STEP_SEQUENCE = [
   { key: 'pmRequest', stage: 'A', label: 'PM 요청' },
   { key: 'pmComplete', stage: 'B', label: 'PM 작성완료' },
   { key: 'cftRequest', stage: 'C', label: 'CFT 검토 요청' },
-  { key: 'sysManage', stage: 'D', label: '체계관리 검토' },
+  { key: 'cftDepts', stage: 'D', label: '[유관부서(CFT)] 부서별 검토', keys: CFT_DEPT_FIELDS },
   { key: 'notice', stage: 'E', label: '안내' },
   { key: 'approval', stage: 'F', label: '결재완료' },
 ]
@@ -50,7 +62,7 @@ export function computeStage(record) {
     if (!hasDate(record.pmRequest)) return STAGES.AUTO
     if (!hasDate(record.pmComplete)) return STAGES.A
     if (!hasDate(record.cftRequest)) return STAGES.B
-    if (!hasDate(record.sysManage)) return STAGES.C
+    if (!CFT_DEPT_FIELDS.every((f) => hasDate(record[f.key]))) return STAGES.C
     if (!hasDate(record.notice)) return STAGES.D
     if (!hasDate(record.approval)) return STAGES.E
     return STAGES.F

@@ -7,7 +7,11 @@ import InlineText from '../common/InlineText'
 import RecordModal from '../common/RecordModal'
 import MetaTags from '../common/MetaTags'
 
-const STEP_KEYS = ['pmRequest', 'pmComplete', 'cftRequest', 'sysManage', 'notice', 'approval']
+const STEP_KEYS = [
+  'pmRequest', 'pmComplete', 'cftRequest',
+  'cftAi', 'cftSwTest', 'cftPurchase', 'cftQuality', 'cftCostAnalysis', 'cftMns', 'cftSystemEng', 'cftBizMgmt',
+  'notice', 'approval',
+]
 
 function lastTouched(r) {
   const dates = STEP_KEYS.map((k) => r[k]).filter(Boolean)

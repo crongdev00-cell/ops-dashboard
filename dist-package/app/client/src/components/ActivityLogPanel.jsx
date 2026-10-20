@@ -4,13 +4,20 @@ import { useData } from '../context/DataContext'
 import { formatDate } from '../lib/format'
 import { useEscapeKey } from '../lib/useEscapeKey'
 
-const DATE_FIELDS = new Set(['pmRequest', 'pmComplete', 'cftRequest', 'sysManage', 'notice', 'approval', 'reviewDate', 'contractDate', 'dueDate'])
+const DATE_FIELDS = new Set([
+  'pmRequest', 'pmComplete', 'cftRequest',
+  'cftAi', 'cftSwTest', 'cftPurchase', 'cftQuality', 'cftCostAnalysis', 'cftMns', 'cftSystemEng', 'cftBizMgmt',
+  'notice', 'approval', 'reviewDate', 'contractDate', 'dueDate',
+])
 const FIELD_LABELS = {
   contractName: '계약(사업)명', deptName: 'BM 부서', bm: 'BM 이름', pm: 'PM', pmDeptName: 'PM 부서',
   reviewMethod: '심의방법', businessDivision: '사업부문', businessType: '사업형태', isSonchunggeum: '손충금 사업',
   amount: '계약금액', note: '비고', appliedBusiness: '적용사업', excluded: '제외 여부',
   pmRequest: 'PM 요청일', pmComplete: 'PM 작성완료일', cftRequest: 'CFT 요청일',
-  sysManage: '체계관리일', notice: '안내일', approval: '결재완료일',
+  cftAi: 'CFT AI 검토일', cftSwTest: 'CFT S/W시험 검토일', cftPurchase: 'CFT 개발구매 검토일',
+  cftQuality: 'CFT 개발품질 검토일', cftCostAnalysis: 'CFT 원가분석 검토일', cftMns: 'CFT M&S 검토일',
+  cftSystemEng: 'CFT 체계공학 검토일', cftBizMgmt: 'CFT 사업관리 검토일',
+  notice: '안내일', approval: '결재완료일',
 }
 
 function displayValue(field, v) {

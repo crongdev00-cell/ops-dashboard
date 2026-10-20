@@ -58,9 +58,20 @@ export default function VerticalStepper({ record, onUpdate }) {
               <p className={`text-sm ${current ? 'font-semibold text-ink' : done ? 'text-ink' : 'text-slate'}`}>
                 {step.label}
               </p>
-              <div className="mt-0.5">
-                <DateField value={record[step.key]} onChange={(v) => onUpdate({ [step.key]: v })} />
-              </div>
+              {step.keys ? (
+                <div className="mt-1.5 grid grid-cols-2 gap-x-3 gap-y-1.5">
+                  {step.keys.map((dept) => (
+                    <div key={dept.key}>
+                      <p className="text-[11px] text-slate">{dept.label}</p>
+                      <DateField value={record[dept.key]} onChange={(v) => onUpdate({ [dept.key]: v })} />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="mt-0.5">
+                  <DateField value={record[step.key]} onChange={(v) => onUpdate({ [step.key]: v })} />
+                </div>
+              )}
             </div>
           </li>
         )

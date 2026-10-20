@@ -6,7 +6,9 @@ const HEADERS = {
   pm: 'PM', pmDeptName: 'PM 부서', appliedBusiness: '적용사업',
   amount: '계약금액(백만원)', dueDate: '완료기한', reviewMethod: '심의방법', stage: '진행상태',
   pmRequest: 'PM요청', pmComplete: 'PM작성완료', cftRequest: 'CFT요청',
-  sysManage: '체계관리', notice: '안내', approval: '결재완료', note: '비고', excluded: '제외됨',
+  cftAi: 'CFT-AI', cftSwTest: 'CFT-S/W시험', cftPurchase: 'CFT-개발구매', cftQuality: 'CFT-개발품질',
+  cftCostAnalysis: 'CFT-원가분석', cftMns: 'CFT-M&S', cftSystemEng: 'CFT-체계공학', cftBizMgmt: 'CFT-사업관리',
+  notice: '안내', approval: '결재완료', note: '비고', excluded: '제외됨',
 }
 
 export function exportRecordsToExcel(records, filename = '개발심의회_현황.xlsx') {
@@ -26,7 +28,14 @@ export function exportRecordsToExcel(records, filename = '개발심의회_현황
     [HEADERS.pmRequest]: r.pmRequest,
     [HEADERS.pmComplete]: r.pmComplete,
     [HEADERS.cftRequest]: r.cftRequest,
-    [HEADERS.sysManage]: r.sysManage,
+    [HEADERS.cftAi]: r.cftAi,
+    [HEADERS.cftSwTest]: r.cftSwTest,
+    [HEADERS.cftPurchase]: r.cftPurchase,
+    [HEADERS.cftQuality]: r.cftQuality,
+    [HEADERS.cftCostAnalysis]: r.cftCostAnalysis,
+    [HEADERS.cftMns]: r.cftMns,
+    [HEADERS.cftSystemEng]: r.cftSystemEng,
+    [HEADERS.cftBizMgmt]: r.cftBizMgmt,
     [HEADERS.notice]: r.notice,
     [HEADERS.approval]: r.approval,
     [HEADERS.note]: r.note,
