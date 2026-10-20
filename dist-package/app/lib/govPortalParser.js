@@ -18,8 +18,8 @@ const COLUMN_INDEX = {
   privateInKindAmount: 12,
   privateTotalAmount: 13,
   amount: 14,          // 사업비 합계 — 대표 금액으로 재사용
-  deptName: 15,
-  govManager: 16,
+  deptName: 15,        // 담당부서 = BM 부서 (일반 사업의 deptName과 같은 의미)
+  bm: 16,               // 담당자 = BM 담당자 (일반 사업의 bm과 같은 의미)
   pm: 17,
 }
 

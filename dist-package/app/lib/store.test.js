@@ -250,7 +250,7 @@ test('syncGovPortal: 새 govKey는 국책사업 레코드로 생성하고, 기�
   const { store } = await freshStore()
   store.seedProjects([])
   const result = store.syncGovPortal([
-    { govKey: 'GOV-1', contractName: '국책사업A', contractOrg: '전담기관', deptName: '부서', amount: 1250, govFundAmount: 1000, privateCashAmount: 200, privateInKindAmount: 50, privateTotalAmount: 250, govManager: '김국책', pm: '이피엠' },
+    { govKey: 'GOV-1', contractName: '국책사업A', contractOrg: '전담기관', deptName: '부서', bm: '김국책', amount: 1250, govFundAmount: 1000, privateCashAmount: 200, privateInKindAmount: 50, privateTotalAmount: 250, pm: '이피엠' },
   ])
   assert.equal(result.created, 1)
   const [rec] = store.getProjects()
@@ -258,6 +258,8 @@ test('syncGovPortal: 새 govKey는 국책사업 레코드로 생성하고, 기�
   assert.equal(rec.govKey, 'GOV-1')
   assert.equal(rec.portalKey, null)
   assert.equal(rec.amount, 1250)
+  assert.equal(rec.deptName, '부서', 'BM 부서')
+  assert.equal(rec.bm, '김국책', 'BM 담당자')
   assert.equal(rec.reviewMethod, '서면보고')
   assert.equal(rec.classificationConfirmed, true)
 })
@@ -265,13 +267,14 @@ test('syncGovPortal: 새 govKey는 국책사업 레코드로 생성하고, 기�
 test('syncGovPortal: 기존 govKey는 GOV_FIELDS만 갱신하고 팀 입력 필드는 건드리지 않는다', async () => {
   const { store } = await freshStore()
   store.seedProjects([])
-  store.syncGovPortal([{ govKey: 'GOV-1', contractName: '국책사업A', amount: 1000 }])
+  store.syncGovPortal([{ govKey: 'GOV-1', contractName: '국책사업A', bm: '김국책', amount: 1000 }])
   const [rec] = store.getProjects()
   store.updateProject(rec.id, { pm: '김팀장' })
-  const result = store.syncGovPortal([{ govKey: 'GOV-1', contractName: '국책사업A', amount: 2000 }])
+  const result = store.syncGovPortal([{ govKey: 'GOV-1', contractName: '국책사업A', bm: '이국책', amount: 2000 }])
   assert.equal(result.updated, 1)
   assert.equal(result.created, 0)
   const updated = store.getProject(rec.id)
   assert.equal(updated.amount, 2000)
-  assert.equal(updated.pm, '김팀장')
+  assert.equal(updated.bm, '이국책', 'bm도 GOV_FIELDS라 재동기화로 갱신되어야 한다')
+  assert.equal(updated.pm, '김팀장', 'pm은 팀 입력 필드라 재동기화로 유지되어야 한다')
 })
