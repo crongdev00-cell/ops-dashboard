@@ -42,6 +42,14 @@ original_management_data_template.xlsx 또는 legacy_dummy_test.xlsx로 테스�
 있습니다 — 계약번호가 같으면 기존 안건에 병합되고, 없으면 새 안건으로 생성됩니다.
 
 
+■ 사용설명서
+
+이 폴더의 "manual" 폴더에 사용설명서가 들어있습니다. 인터넷 연결 없이 보려면
+"manual\manual_offline.html" 파일을 더블클릭해서 브라우저로 열면 됩니다(이미지까지
+파일 하나에 전부 들어있어 폐쇄망에서도 바로 열립니다). 텍스트로만 보려면
+"manual\manual.md"를 열어도 됩니다.
+
+
 ■ 문제가 생기면
 
 - 브라우저가 자동으로 안 열리면: 아무 브라우저나 열어서 주소창에 http://localhost:4000 입력
