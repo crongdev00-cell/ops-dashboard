@@ -16,7 +16,10 @@ export const STAGES = {
 // 대면보고는 결재권자가 둘로 갈린다 — 손충금 사업이면 부문장, 그 외(무기체계/핵심기술 금액 기준 충족)는 연구개발본부장.
 export const FACE_TO_FACE_SONCHUNGGEUM = '대면보고(부문장)'
 export const FACE_TO_FACE_DEFAULT = '대면보고(연구개발본부장)'
-export const REVIEW_METHODS = ['미지정', '미실시', '서면보고', FACE_TO_FACE_SONCHUNGGEUM, FACE_TO_FACE_DEFAULT, '대상아님']
+// 레거시 엑셀에 "전자결재"로 적힌 옛 데이터 중, "심의회"(→대면보고)와 달리 위원장 구분 없이
+// 본부장 전결로 처리되던 건들 — 서면보고/대면보고와는 별도의 심의방법으로 구분해달라는 요청(사용자).
+export const ELECTRONIC_APPROVAL = '전자결재(본부장)'
+export const REVIEW_METHODS = ['미지정', '미실시', '서면보고', ELECTRONIC_APPROVAL, FACE_TO_FACE_SONCHUNGGEUM, FACE_TO_FACE_DEFAULT, '대상아님']
 const FACE_TO_FACE_METHODS = new Set([FACE_TO_FACE_SONCHUNGGEUM, FACE_TO_FACE_DEFAULT])
 
 // 레거시 업로드에서 애초에 검토 대상이 아닌 CFT 부서("-" 표시)를 나타내는 값 — 날짜 없음(미입력)과
@@ -63,7 +66,7 @@ export function computeStage(record) {
   if (y === '대상아님') return STAGES.NA
   if (y === '미실시') return STAGES.N
 
-  if (y === '서면보고' || FACE_TO_FACE_METHODS.has(y)) {
+  if (y === '서면보고' || y === ELECTRONIC_APPROVAL || FACE_TO_FACE_METHODS.has(y)) {
     if (!hasDate(record.pmRequest)) return STAGES.AUTO
     if (!hasDate(record.pmComplete)) return STAGES.A
     if (!hasDate(record.cftRequest)) return STAGES.B

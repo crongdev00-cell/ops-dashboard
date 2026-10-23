@@ -403,7 +403,9 @@ export function migrateLegacyRows(legacyRows) {
         contractName: row.contractName, deptName: null, bm: null,
         contractOrg: row.contractOrg ?? null, contractMethod: row.contractMethod ?? null,
         appliedBusiness: row.appliedBusiness ?? null, businessType, contractDate: row.contractDate ?? null, dueDate: row.dueDate ?? null, amount,
-        businessDivision: projectType === '국책사업' ? null : '미래전장사업부문',
+        // 레거시로 이관되는 국책사업도 실무상 전부 미래전장사업부문 소속이라 사업과 동일하게 기본값을 둔다
+        // (포털 업로드로 들어오는 국책사업은 syncGovPortal에서 별도로 null 유지 — 그쪽은 다른 질문).
+        businessDivision: '미래전장사업부문',
         pm: null, pmDeptName: null, note: null, reviewMethod: '미지정', chair: null, reviewDate: null, reviewResult: null, reviewContent: null,
         pmRequest: null, pmDue: null, pmComplete: null, cftRequest: null,
         cftAi: null, cftSwTest: null, cftPurchase: null, cftQuality: null, cftCostAnalysis: null, cftMns: null, cftSystemEng: null, cftBizMgmt: null,
