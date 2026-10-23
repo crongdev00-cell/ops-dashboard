@@ -1,5 +1,5 @@
 @echo off
-echo Test package v0.21
+echo Test package v0.22
 echo [1/3] Preparing server...
 cd /d "%~dp0app"
 echo [2/3] Starting server. (Keep this window open - closing it stops the app.)
