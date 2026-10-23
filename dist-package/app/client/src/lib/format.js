@@ -1,5 +1,8 @@
+import { NOT_APPLICABLE } from './stage'
+
 export function formatDate(iso) {
   if (!iso) return '-'
+  if (iso === NOT_APPLICABLE) return NOT_APPLICABLE
   const [y, m, d] = iso.split('-')
   return `${y}.${m}.${d}`
 }

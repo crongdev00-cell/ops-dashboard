@@ -19,7 +19,12 @@ export const FACE_TO_FACE_DEFAULT = '대면보고(연구개발본부장)'
 export const REVIEW_METHODS = ['미지정', '미실시', '서면보고', FACE_TO_FACE_SONCHUNGGEUM, FACE_TO_FACE_DEFAULT, '대상아님']
 const FACE_TO_FACE_METHODS = new Set([FACE_TO_FACE_SONCHUNGGEUM, FACE_TO_FACE_DEFAULT])
 
-// [유관부서(CFT)] 검토현황 — 8개 부서가 전부 완료돼야 다음 단계(검토완료)로 넘어간다.
+// 레거시 업로드에서 애초에 검토 대상이 아닌 CFT 부서("-" 표시)를 나타내는 값 — 날짜 없음(미입력)과
+// 구분해야 CFT 게이트가 영원히 막히지 않는다. lib/legacyParser.js의 NOT_APPLICABLE과 같은 문자열이어야
+// 한다(의도적 중복, 서버/클라 분리).
+export const NOT_APPLICABLE = '해당없음'
+
+// [유관부서(CFT)] 검토현황 — 8개 부서가 전부 완료(날짜 또는 해당없음)돼야 다음 단계(검토완료)로 넘어간다.
 export const CFT_DEPT_FIELDS = [
   { key: 'cftAi', label: 'AI' },
   { key: 'cftSwTest', label: 'S/W 시험' },

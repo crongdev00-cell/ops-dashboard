@@ -36,6 +36,13 @@ const DATE_FIELDS = new Set([
   'cftAi', 'cftSwTest', 'cftPurchase', 'cftQuality', 'cftCostAnalysis', 'cftMns', 'cftSystemEng', 'cftBizMgmt',
   'notice', 'approval',
 ])
+// 8개 CFT 부서 중 애초에 검토 대상이 아닌 부서는 구 엑셀에 날짜 대신 "-"로 표시돼 있다.
+// 그걸 날짜 필드처럼 null로 비워버리면 client/src/lib/stage.js의 CFT 게이트(8개 전부 날짜가
+// 있어야 다음 단계로 넘어감)가 영원히 막혀서, 옛날에 이미 결재완료까지 끝난 안건이 CFT검토중에
+// 머무는 것처럼 보인다 — "날짜 없음(미입력)"과 "애초에 해당 없음"을 구분해서 저장해야 한다.
+// client/src/lib/format.js의 NOT_APPLICABLE과 같은 문자열이어야 한다(의도적 중복, 서버/클라 분리).
+const CFT_DEPT_FIELDS = new Set(['cftAi', 'cftSwTest', 'cftPurchase', 'cftQuality', 'cftCostAnalysis', 'cftMns', 'cftSystemEng', 'cftBizMgmt'])
+export const NOT_APPLICABLE = '해당없음'
 
 function cleanText(v) {
   if (v === null || v === undefined) return null
@@ -88,7 +95,9 @@ export function parseLegacyBuffer(buffer) {
     for (const [field, idx] of Object.entries(COLUMN_INDEX)) {
       if (field === 'contractName') continue
       const raw = row[idx]
-      if (DATE_FIELDS.has(field)) rec[field] = normalizeDate(raw)
+      if (DATE_FIELDS.has(field)) {
+        rec[field] = CFT_DEPT_FIELDS.has(field) && String(raw ?? '').trim() === '-' ? NOT_APPLICABLE : normalizeDate(raw)
+      }
       else if (field === 'amount') {
         // 구 엑셀 헤더가 이미 "계약금액(백만원)"이므로 포털 파서처럼 100만으로 나누면 안 된다.
         const n = raw === null || raw === '' ? null : Number(raw)
