@@ -63,9 +63,13 @@ export function parseLegacyBuffer(buffer) {
   }
 
   // 사용자가 직접 추가한 "계약번호" 열은 위치가 고정돼 있지 않으니 헤더 텍스트로 찾는다.
+  // "내부관리번호" 열은 국책사업 행(계약번호가 없음)을 구분하기 위한 선택 열 — 없어도 에러 안 냄.
   let contractKeyIdx = -1
+  let govKeyIdx = -1
   for (let c = 0; c < Math.max(...headerRows.map((r) => r.length)); c++) {
-    if (headerCellText(headerRows, c).includes('계약번호')) { contractKeyIdx = c; break }
+    const text = headerCellText(headerRows, c)
+    if (contractKeyIdx === -1 && text.includes('계약번호')) contractKeyIdx = c
+    if (govKeyIdx === -1 && text.includes('내부관리번호')) govKeyIdx = c
   }
   if (contractKeyIdx === -1) {
     throw new Error('"계약번호" 열을 찾지 못했습니다. 구 엑셀에 계약번호 열을 추가한 뒤 업로드해주세요.')
@@ -78,7 +82,9 @@ export function parseLegacyBuffer(buffer) {
     const contractName = cleanText(row[COLUMN_INDEX.contractName])
     if (!contractName) continue // 빈 행
 
-    const rec = { portalKey: cleanText(row[contractKeyIdx]), contractName }
+    const portalKey = cleanText(row[contractKeyIdx])
+    const govKey = portalKey ? null : (govKeyIdx === -1 ? null : cleanText(row[govKeyIdx]))
+    const rec = { portalKey, govKey, projectType: govKey ? '국책사업' : '사업', contractName }
     for (const [field, idx] of Object.entries(COLUMN_INDEX)) {
       if (field === 'contractName') continue
       const raw = row[idx]
