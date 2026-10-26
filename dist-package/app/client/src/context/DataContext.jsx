@@ -1,20 +1,27 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react'
-import { computeStage, CFT_DEPT_FIELDS } from '../lib/stage'
+import { computeStage, CFT_DEPT_FIELDS, STAGES } from '../lib/stage'
 import { OUR_DIVISION, NOT_APPLICABLE } from '../lib/businessDivision'
 
 const DataContext = createContext(null)
 const SAVED_FILTERS_KEY = 'ops-dashboard:savedFilters'
 
+// 진행 단계 체크박스 필터 기본값 — "지금 진행 중인 것"만 기본으로 보이게, 미실시(N)·결재완료(F)는 기본 체크 해제.
+export function defaultStageFilter() {
+  return new Set(Object.values(STAGES).map((s) => s.code).filter((c) => c !== 'N' && c !== 'F'))
+}
+
 function loadSavedFilters() {
   try {
-    return JSON.parse(localStorage.getItem(SAVED_FILTERS_KEY) ?? '[]')
+    const raw = JSON.parse(localStorage.getItem(SAVED_FILTERS_KEY) ?? '[]')
+    // localStorage엔 JSON으로만 저장되므로 stage는 배열로 들어있다 — 불러올 때 Set으로 복원.
+    return raw.map((f) => ({ ...f, filters: { ...f.filters, stage: new Set(f.filters.stage ?? []) } }))
   } catch {
     return []
   }
 }
 
 const EMPTY_FILTERS = {
-  dept: 'all', pm: 'all', stage: 'all', query: '', overdueOnly: false,
+  dept: 'all', pm: 'all', stage: defaultStageFilter(), query: '', overdueOnly: false,
   division: OUR_DIVISION, // '미래전장사업부문' | '그 외 부문' | '미지정' | 'all'
   newOnly: false, showExcluded: false, noPmOnly: false, cftOverdueOnly: false, needsClassificationOnly: false,
 }
@@ -75,7 +82,11 @@ export function DataProvider({ children }) {
   const patchVersionRef = useRef(new Map())
 
   useEffect(() => {
-    try { localStorage.setItem(SAVED_FILTERS_KEY, JSON.stringify(savedFilters)) } catch { /* private mode 등 무시 */ }
+    try {
+      // Set은 JSON.stringify로 직렬화되지 않으므로(빈 객체 "{}"가 됨) 배열로 바꿔서 저장한다.
+      const serializable = savedFilters.map((f) => ({ ...f, filters: { ...f.filters, stage: [...f.filters.stage] } }))
+      localStorage.setItem(SAVED_FILTERS_KEY, JSON.stringify(serializable))
+    } catch { /* private mode 등 무시 */ }
   }, [savedFilters])
 
   const refreshAll = async () => {
@@ -284,7 +295,7 @@ export function DataProvider({ children }) {
       if (!matchesDivision(r, filters.division)) return false
       if (filters.dept !== 'all' && r.deptName !== filters.dept) return false
       if (filters.pm !== 'all' && r.pm !== filters.pm) return false
-      if (filters.stage !== 'all' && computeStage(r).code !== filters.stage) return false
+      if (!filters.stage.has(computeStage(r).code)) return false
       if (filters.newOnly && !r.isNew) return false
       if (filters.noPmOnly && r.pm) return false
       if (q && !r.contractName?.toLowerCase().includes(q)) return false

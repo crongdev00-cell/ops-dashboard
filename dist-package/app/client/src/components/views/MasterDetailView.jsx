@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { Building2, User, Gavel, Coins, Layers, Trash2, Sparkles, RotateCcw, ChevronLeft, ChevronRight } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { Building2, User, Gavel, Coins, Layers, Trash2, Sparkles, RotateCcw, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, CalendarRange } from 'lucide-react'
 import StatusBadge from '../common/StatusBadge'
 import InlineText from '../common/InlineText'
 import VerticalStepper from '../common/VerticalStepper'
@@ -11,8 +11,27 @@ import { useData } from '../../context/DataContext'
 
 const LIST_PAGE_SIZE = 100
 
+function yearOf(record) {
+  return record.contractDate ? new Date(record.contractDate).getFullYear() : '연도미정'
+}
+
 export default function MasterDetailView() {
-  const { visibleRecords: records, selectedId, setSelectedId, updateRecord, deleteRecord, markSeen } = useData()
+  const { visibleRecords: unsorted, selectedId, setSelectedId, updateRecord, deleteRecord, markSeen } = useData()
+  const [sortDir, setSortDir] = useState('desc') // 계약일자 기준, 기본 최신순
+  const [groupByYear, setGroupByYear] = useState(false)
+
+  // 계약일자가 없는 레코드는 정렬 방향과 무관하게 항상 맨 뒤로 보낸다.
+  const records = useMemo(() => {
+    const arr = [...unsorted]
+    arr.sort((a, b) => {
+      if (!a.contractDate && !b.contractDate) return 0
+      if (!a.contractDate) return 1
+      if (!b.contractDate) return -1
+      return sortDir === 'asc' ? a.contractDate.localeCompare(b.contractDate) : b.contractDate.localeCompare(a.contractDate)
+    })
+    return arr
+  }, [unsorted, sortDir])
+
   const explicitlySelected = records.find((r) => r.id === selectedId)
   const selected = explicitlySelected ?? records[0]
   const [actionError, setActionError] = useState(null)
@@ -45,31 +64,67 @@ export default function MasterDetailView() {
 
   const pageCount = Math.max(1, Math.ceil(records.length / LIST_PAGE_SIZE))
   const safeListPage = Math.min(listPage, pageCount - 1)
-  const pagedRecords = records.slice(safeListPage * LIST_PAGE_SIZE, safeListPage * LIST_PAGE_SIZE + LIST_PAGE_SIZE)
+  // 연도별 묶음 보기 중엔 페이지네이션을 끄고 전체를 한 번에 그룹 렌더링한다.
+  const pagedRecords = groupByYear ? records : records.slice(safeListPage * LIST_PAGE_SIZE, safeListPage * LIST_PAGE_SIZE + LIST_PAGE_SIZE)
+
+  const renderCard = (r) => {
+    const active = r.id === selected.id
+    return (
+      <button
+        key={r.id}
+        onClick={() => setSelectedId(r.id)}
+        className={`block w-full border-b border-line px-4 py-3.5 text-left transition-colors ${active ? 'bg-indigo-soft' : 'hover:bg-paper'}`}
+      >
+        <p className="flex items-center gap-1.5 truncate text-sm font-medium text-ink">
+          {r.isNew && <Sparkles size={12} className="shrink-0 text-indigo" />}
+          {r.contractName}
+        </p>
+        <div className="mt-1.5"><MetaTags items={[{ icon: Building2, text: r.deptName }, { icon: User, text: r.pm }]} /></div>
+        <div className="mt-2"><StatusBadge record={r} size="sm" /></div>
+      </button>
+    )
+  }
 
   return (
     <div className="grid h-full grid-cols-[minmax(0,340px)_1fr] grid-rows-[minmax(0,1fr)] gap-0 overflow-hidden rounded-2xl border border-line bg-surface">
       <div className="flex flex-col border-r border-line">
-      <div className="flex-1 overflow-y-auto">
-        {pagedRecords.map((r) => {
-          const active = r.id === selected.id
-          return (
-            <button
-              key={r.id}
-              onClick={() => setSelectedId(r.id)}
-              className={`block w-full border-b border-line px-4 py-3.5 text-left transition-colors ${active ? 'bg-indigo-soft' : 'hover:bg-paper'}`}
-            >
-              <p className="flex items-center gap-1.5 truncate text-sm font-medium text-ink">
-                {r.isNew && <Sparkles size={12} className="shrink-0 text-indigo" />}
-                {r.contractName}
-              </p>
-              <div className="mt-1.5"><MetaTags items={[{ icon: Building2, text: r.deptName }, { icon: User, text: r.pm }]} /></div>
-              <div className="mt-2"><StatusBadge record={r} size="sm" /></div>
-            </button>
-          )
-        })}
+      <div className="flex items-center gap-1.5 border-b border-line px-3 py-2">
+        <button
+          onClick={() => setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))}
+          className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-slate hover:bg-paper"
+        >
+          계약일자 {sortDir === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+        </button>
+        <button
+          onClick={() => setGroupByYear((v) => !v)}
+          aria-pressed={groupByYear}
+          className={`flex items-center gap-1 rounded-md px-2 py-1 text-xs ${groupByYear ? 'bg-indigo-soft text-indigo' : 'text-slate hover:bg-paper'}`}
+        >
+          <CalendarRange size={12} /> 연도별
+        </button>
       </div>
-      {pageCount > 1 && (
+      <div className="flex-1 overflow-y-auto">
+        {groupByYear
+          ? (() => {
+              const rows = []
+              let lastYear
+              for (const r of pagedRecords) {
+                const y = yearOf(r)
+                if (y !== lastYear) {
+                  rows.push(
+                    <div key={`y-${y}`} className="bg-paper px-4 py-1.5 text-xs font-semibold text-slate">
+                      {y === '연도미정' ? y : `${y}년`}
+                    </div>
+                  )
+                  lastYear = y
+                }
+                rows.push(renderCard(r))
+              }
+              return rows
+            })()
+          : pagedRecords.map(renderCard)}
+      </div>
+      {!groupByYear && pageCount > 1 && (
         <div className="flex items-center justify-center gap-2 border-t border-line px-2 py-2 text-xs text-slate">
           <button
             onClick={() => setListPage((p) => Math.max(0, p - 1))}

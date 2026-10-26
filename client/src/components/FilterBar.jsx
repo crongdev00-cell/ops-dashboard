@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { Search, X, AlertTriangle, Bookmark, Plus, Check, Sparkles, EyeOff, UserX, Clock, ClipboardCheck } from 'lucide-react'
+import { Search, X, AlertTriangle, Bookmark, Plus, Check, Sparkles, EyeOff, UserX, Clock, ClipboardCheck, ChevronDown } from 'lucide-react'
 import { STAGES } from '../lib/stage'
 import { OUR_DIVISION } from '../lib/businessDivision'
-import { useData, isCftOverdue, needsClassification } from '../context/DataContext'
+import { useData, isCftOverdue, needsClassification, defaultStageFilter } from '../context/DataContext'
 
 const DIVISION_TABS = [OUR_DIVISION, '그 외 부문', '미지정', 'all']
 const DIVISION_LABELS = { [OUR_DIVISION]: OUR_DIVISION, '그 외 부문': '그 외 부문', '미지정': '미지정', all: '전체' }
@@ -12,8 +12,18 @@ export default function FilterBar() {
     filters, setFilters, depts, pms, visibleRecords, activeRecords, divisionScopedRecords, records,
     savedFilters, saveCurrentFilter, applySavedFilter, deleteSavedFilter,
   } = useData()
-  const active = filters.dept !== 'all' || filters.pm !== 'all' || filters.stage !== 'all' || filters.query || filters.overdueOnly || filters.newOnly || filters.noPmOnly || filters.cftOverdueOnly || filters.needsClassificationOnly
+  const isDefaultStage = (set) => {
+    const def = defaultStageFilter()
+    return set.size === def.size && [...def].every((c) => set.has(c))
+  }
+  const active = filters.dept !== 'all' || filters.pm !== 'all' || !isDefaultStage(filters.stage) || filters.query || filters.overdueOnly || filters.newOnly || filters.noPmOnly || filters.cftOverdueOnly || filters.needsClassificationOnly
   const [savingName, setSavingName] = useState(null)
+  const [stageMenuOpen, setStageMenuOpen] = useState(false)
+  const toggleStage = (code) => setFilters((f) => {
+    const next = new Set(f.stage)
+    next.has(code) ? next.delete(code) : next.add(code)
+    return { ...f, stage: next }
+  })
   // 이 칩들은 지금 선택된 부문 탭과 "함께(AND)" 적용되는 하위 필터라서, 배지 숫자도 부문 탭으로
   // 좁힌 집합 기준으로 세야 한다 — 전체 기준 숫자를 보여주면 눌렀을 때 그보다 적게(또는 0건)
   // 나와서 숫자와 실제 결과가 안 맞는 모순이 생긴다. (unassignedCount는 "미지정" 탭 배지 자체라
@@ -63,13 +73,27 @@ export default function FilterBar() {
 
         <Select value={filters.dept} onChange={(v) => setFilters((f) => ({ ...f, dept: v }))} label="전체 부서" options={depts} />
         <Select value={filters.pm} onChange={(v) => setFilters((f) => ({ ...f, pm: v }))} label="전체 PM" options={pms} />
-        <Select
-          value={filters.stage}
-          onChange={(v) => setFilters((f) => ({ ...f, stage: v }))}
-          label="전체 상태"
-          options={Object.values(STAGES).map((s) => s.code)}
-          renderOption={(code) => Object.values(STAGES).find((s) => s.code === code)?.label ?? code}
-        />
+        <div className="relative">
+          <button
+            onClick={() => setStageMenuOpen((v) => !v)}
+            className="flex items-center gap-1 rounded-lg border border-line bg-paper px-2.5 py-1.5 text-xs text-ink outline-none focus:border-indigo"
+          >
+            진행 단계 ({filters.stage.size}/{Object.keys(STAGES).length}) <ChevronDown size={12} />
+          </button>
+          {stageMenuOpen && (
+            <>
+              <div className="fixed inset-0 z-10" onClick={() => setStageMenuOpen(false)} />
+              <div className="absolute left-0 top-full z-20 mt-1 w-44 rounded-lg border border-line bg-surface p-1.5 shadow-lg">
+                {Object.values(STAGES).map((s) => (
+                  <label key={s.code} className="flex items-center gap-2 rounded-md px-2 py-1.5 text-xs text-ink hover:bg-paper">
+                    <input type="checkbox" checked={filters.stage.has(s.code)} onChange={() => toggleStage(s.code)} />
+                    {s.label}
+                  </label>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
 
         <ToggleChip active={filters.overdueOnly} icon={AlertTriangle} label="지연만" onClick={() => setFilters((f) => ({ ...f, overdueOnly: !f.overdueOnly }))} />
         {cftOverdueCount > 0 && (
@@ -88,7 +112,7 @@ export default function FilterBar() {
 
         {active && (
           <button
-            onClick={() => setFilters((f) => ({ ...f, dept: 'all', pm: 'all', stage: 'all', query: '', overdueOnly: false, newOnly: false, noPmOnly: false, cftOverdueOnly: false, needsClassificationOnly: false }))}
+            onClick={() => setFilters((f) => ({ ...f, dept: 'all', pm: 'all', stage: defaultStageFilter(), query: '', overdueOnly: false, newOnly: false, noPmOnly: false, cftOverdueOnly: false, needsClassificationOnly: false }))}
             className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs text-slate hover:bg-paper hover:text-ink"
           >
             <X size={12} /> 필터 초기화
