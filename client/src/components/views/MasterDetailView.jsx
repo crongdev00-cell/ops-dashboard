@@ -8,29 +8,17 @@ import MetaTags from '../common/MetaTags'
 import { REVIEW_METHODS } from '../../lib/stage'
 import { CLASSIFY_OPTIONS } from '../../lib/businessDivision'
 import { useData } from '../../context/DataContext'
+import { SORT_FIELDS, compareRecords, buildYearGroups } from '../../lib/recordSort'
 
 const LIST_PAGE_SIZE = 100
 
-function yearOf(record) {
-  return record.contractDate ? new Date(record.contractDate).getFullYear() : '연도미정'
-}
-
 export default function MasterDetailView() {
   const { visibleRecords: unsorted, selectedId, setSelectedId, updateRecord, deleteRecord, markSeen } = useData()
-  const [sortDir, setSortDir] = useState('desc') // 계약일자 기준, 기본 최신순
+  const [sort, setSort] = useState({ key: 'contractDate', dir: 'desc' }) // 기본 계약일자 최신순
   const [groupByYear, setGroupByYear] = useState(false)
 
-  // 계약일자가 없는 레코드는 정렬 방향과 무관하게 항상 맨 뒤로 보낸다.
-  const records = useMemo(() => {
-    const arr = [...unsorted]
-    arr.sort((a, b) => {
-      if (!a.contractDate && !b.contractDate) return 0
-      if (!a.contractDate) return 1
-      if (!b.contractDate) return -1
-      return sortDir === 'asc' ? a.contractDate.localeCompare(b.contractDate) : b.contractDate.localeCompare(a.contractDate)
-    })
-    return arr
-  }, [unsorted, sortDir])
+  const records = useMemo(() => [...unsorted].sort((a, b) => compareRecords(a, b, sort)), [unsorted, sort])
+  const groupedRows = useMemo(() => buildYearGroups(records, (a, b) => compareRecords(a, b, sort)), [records, sort])
 
   const explicitlySelected = records.find((r) => r.id === selectedId)
   const selected = explicitlySelected ?? records[0]
@@ -88,40 +76,37 @@ export default function MasterDetailView() {
   return (
     <div className="grid h-full grid-cols-[minmax(0,340px)_1fr] grid-rows-[minmax(0,1fr)] gap-0 overflow-hidden rounded-2xl border border-line bg-surface">
       <div className="flex flex-col border-r border-line">
-      <div className="flex items-center gap-1.5 border-b border-line px-3 py-2">
-        <button
-          onClick={() => setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))}
-          className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-slate hover:bg-paper"
+      <div className="flex items-center gap-1 border-b border-line px-2 py-2">
+        <select
+          value={sort.key}
+          onChange={(e) => setSort((s) => ({ ...s, key: e.target.value }))}
+          className="rounded-md border border-transparent bg-transparent px-1 py-1 text-xs text-slate outline-none hover:border-line focus:border-indigo"
         >
-          계약일자 {sortDir === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+          {SORT_FIELDS.map((f) => <option key={f.key} value={f.key}>{f.label}</option>)}
+        </select>
+        <button
+          onClick={() => setSort((s) => ({ ...s, dir: s.dir === 'asc' ? 'desc' : 'asc' }))}
+          className="flex items-center gap-1 rounded-md px-1.5 py-1 text-xs text-slate hover:bg-paper"
+        >
+          {sort.dir === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
         </button>
         <button
           onClick={() => setGroupByYear((v) => !v)}
           aria-pressed={groupByYear}
-          className={`flex items-center gap-1 rounded-md px-2 py-1 text-xs ${groupByYear ? 'bg-indigo-soft text-indigo' : 'text-slate hover:bg-paper'}`}
+          className={`ml-auto flex items-center gap-1 rounded-md px-2 py-1 text-xs ${groupByYear ? 'bg-indigo-soft text-indigo' : 'text-slate hover:bg-paper'}`}
         >
           <CalendarRange size={12} /> 연도별
         </button>
       </div>
       <div className="flex-1 overflow-y-auto">
         {groupByYear
-          ? (() => {
-              const rows = []
-              let lastYear
-              for (const r of pagedRecords) {
-                const y = yearOf(r)
-                if (y !== lastYear) {
-                  rows.push(
-                    <div key={`y-${y}`} className="bg-paper px-4 py-1.5 text-xs font-semibold text-slate">
-                      {y === '연도미정' ? y : `${y}년`}
-                    </div>
-                  )
-                  lastYear = y
-                }
-                rows.push(renderCard(r))
-              }
-              return rows
-            })()
+          ? groupedRows.map((item, i) => (item.type === 'header'
+            ? (
+              <div key={`y-${item.year}-${i}`} className="bg-paper px-4 py-1.5 text-xs font-semibold text-slate">
+                {item.year === '연도미정' ? item.year : `${item.year}년`}
+              </div>
+            )
+            : renderCard(item.record)))
           : pagedRecords.map(renderCard)}
       </div>
       {!groupByYear && pageCount > 1 && (

@@ -7,6 +7,7 @@ import RecordModal from '../common/RecordModal'
 import { stageProgressPct, computeStage } from '../../lib/stage'
 import { useData } from '../../context/DataContext'
 import { exportRecordsToExcel } from '../../lib/exportExcel'
+import { compareRecords, buildYearGroups } from '../../lib/recordSort'
 
 const PAGE_SIZE = 100
 
@@ -25,10 +26,6 @@ const ALL_COLS = [
   { key: 'pmRequest', label: 'PM요청' },
   { key: 'approval', label: '결재완료' },
 ]
-
-function yearOf(record) {
-  return record.contractDate ? new Date(record.contractDate).getFullYear() : '연도미정'
-}
 
 export default function AirtableGridView() {
   const { records: allRecords, visibleRecords: records, selectedIds, toggleSelect } = useData()
@@ -51,37 +48,10 @@ export default function AirtableGridView() {
     }
   }
 
-  const sorted = useMemo(() => {
-    const arr = [...records]
-    arr.sort((a, b) => {
-      let av, bv
-      if (sort.key === 'stage') { av = computeStage(a).label; bv = computeStage(b).label }
-      else if (sort.key === 'progress') { av = stageProgressPct(a); bv = stageProgressPct(b) }
-      else { av = a[sort.key] ?? ''; bv = b[sort.key] ?? '' }
-      // 계약일자가 없는 건은 정렬 방향과 무관하게 항상 맨 뒤로 보낸다.
-      if (sort.key === 'contractDate') {
-        if (!av && !bv) return 0
-        if (!av) return 1
-        if (!bv) return -1
-      }
-      if (av < bv) return sort.dir === 'asc' ? -1 : 1
-      if (av > bv) return sort.dir === 'asc' ? 1 : -1
-      return 0
-    })
-    return arr
-  }, [records, sort])
+  const sorted = useMemo(() => [...records].sort((a, b) => compareRecords(a, b, sort)), [records, sort])
 
-  // 연도별 묶음 보기 — 정렬된 순서를 그대로 쓰되 연도가 바뀌는 지점마다 헤더 행을 끼워 넣는다.
-  const groupedRows = useMemo(() => {
-    const rows = []
-    let lastYear
-    for (const r of sorted) {
-      const y = yearOf(r)
-      if (y !== lastYear) { rows.push({ type: 'header', year: y }); lastYear = y }
-      rows.push({ type: 'row', record: r })
-    }
-    return rows
-  }, [sorted])
+  // 연도별 묶음 보기 — 연도로 먼저 묶고 버킷 안에서 현재 정렬 기준을 적용한다.
+  const groupedRows = useMemo(() => buildYearGroups(records, (a, b) => compareRecords(a, b, sort)), [records, sort])
 
   const toggleSort = (key) => setSort((s) => (s.key === key ? { key, dir: s.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: 'asc' }))
   const cols = ALL_COLS.filter((c) => visibleCols.has(c.key))
