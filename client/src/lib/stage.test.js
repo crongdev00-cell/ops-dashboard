@@ -31,3 +31,7 @@ test('레거시 이관으로 들어온 "해당없음" 부서는 날짜가 없어
   record.cftBizMgmt = NOT_APPLICABLE // 이 부서는 애초에 검토 대상이 아니었음
   assert.equal(computeStage(record).code, 'F', '해당없음 부서 때문에 결재완료까지 끝난 옛 안건이 CFT검토중에 막히면 안 된다')
 })
+
+test('레거시 "취소" 심의방법은 취소 단계로 분류된다', () => {
+  assert.equal(computeStage({ reviewMethod: '취소' }).code, 'CANCEL')
+})

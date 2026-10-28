@@ -5,9 +5,10 @@ import { OUR_DIVISION, NOT_APPLICABLE } from '../lib/businessDivision'
 const DataContext = createContext(null)
 const SAVED_FILTERS_KEY = 'ops-dashboard:savedFilters'
 
-// 진행 단계 체크박스 필터 기본값 — "지금 진행 중인 것"만 기본으로 보이게, 미실시(N)·결재완료(F)는 기본 체크 해제.
+// 진행 단계 체크박스 필터 기본값 — "지금 진행 중인 것"만 기본으로 보이게, 미실시(N)·결재완료(F)·취소(CANCEL)는 기본 체크 해제.
+const DEFAULT_UNCHECKED_STAGES = ['N', 'F', 'CANCEL']
 export function defaultStageFilter() {
-  return new Set(Object.values(STAGES).map((s) => s.code).filter((c) => c !== 'N' && c !== 'F'))
+  return new Set(Object.values(STAGES).map((s) => s.code).filter((c) => !DEFAULT_UNCHECKED_STAGES.includes(c)))
 }
 
 function loadSavedFilters() {

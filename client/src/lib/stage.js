@@ -10,6 +10,7 @@ export const STAGES = {
   D: { code: 'D', label: '검토완료', color: '#34d399' },
   E: { code: 'E', label: '안내완료', color: '#22c55e' },
   F: { code: 'F', label: '결재완료', color: '#16a34a' },
+  CANCEL: { code: 'CANCEL', label: '취소', color: '#f43f5e' },
 }
 
 // "서면보고"/"대면보고"는 원래 '전자결재'/'심의회'였으나, 사용자가 헷갈린다고 해서 통일한 용어.
@@ -19,7 +20,7 @@ export const FACE_TO_FACE_DEFAULT = '대면보고(연구개발본부장)'
 // 레거시 엑셀에 "전자결재"로 적힌 옛 데이터 중, "심의회"(→대면보고)와 달리 위원장 구분 없이
 // 본부장 전결로 처리되던 건들 — 서면보고/대면보고와는 별도의 심의방법으로 구분해달라는 요청(사용자).
 export const ELECTRONIC_APPROVAL = '전자결재(본부장)'
-export const REVIEW_METHODS = ['미지정', '미실시', '서면보고', ELECTRONIC_APPROVAL, FACE_TO_FACE_SONCHUNGGEUM, FACE_TO_FACE_DEFAULT, '대상아님']
+export const REVIEW_METHODS = ['미지정', '미실시', '서면보고', ELECTRONIC_APPROVAL, FACE_TO_FACE_SONCHUNGGEUM, FACE_TO_FACE_DEFAULT, '대상아님', '취소']
 const FACE_TO_FACE_METHODS = new Set([FACE_TO_FACE_SONCHUNGGEUM, FACE_TO_FACE_DEFAULT])
 
 // 레거시 업로드에서 애초에 검토 대상이 아닌 CFT 부서("-" 표시)를 나타내는 값 — 날짜 없음(미입력)과
@@ -57,6 +58,7 @@ export const STAGE_GROUPS = [
   { key: 'cftReview', label: '[유관부서(CFT)] 검토 현황', codes: ['C', 'D'] },
   { key: 'noticeApproval', label: '안내 & 결재', codes: ['E', 'F'] },
   { key: 'na', label: '대상아님', codes: ['NA'] },
+  { key: 'cancel', label: '취소', codes: ['CANCEL'] },
 ]
 
 const hasDate = (v) => !!v
@@ -65,6 +67,7 @@ export function computeStage(record) {
   const y = (record.reviewMethod ?? '').trim()
   if (y === '대상아님') return STAGES.NA
   if (y === '미실시') return STAGES.N
+  if (y === '취소') return STAGES.CANCEL
 
   if (y === '서면보고' || y === ELECTRONIC_APPROVAL || FACE_TO_FACE_METHODS.has(y)) {
     if (!hasDate(record.pmRequest)) return STAGES.AUTO
