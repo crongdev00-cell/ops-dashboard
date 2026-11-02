@@ -35,3 +35,12 @@ test('레거시 이관으로 들어온 "해당없음" 부서는 날짜가 없어
 test('레거시 "취소" 심의방법은 취소 단계로 분류된다', () => {
   assert.equal(computeStage({ reviewMethod: '취소' }).code, 'CANCEL')
 })
+
+test('완료보고(category:completion) 레코드는 stageOverride를 그대로 쓰고, CFT 날짜 역산을 하지 않는다', () => {
+  const record = { category: 'completion', stageOverride: 'C', reviewMethod: '미지정' }
+  assert.equal(computeStage(record).code, 'C')
+})
+
+test('완료보고 레코드에 stageOverride가 없으면 미지정으로 떨어진다', () => {
+  assert.equal(computeStage({ category: 'completion' }).code, 'U')
+})

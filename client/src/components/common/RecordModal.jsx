@@ -4,9 +4,10 @@ import StatusBadge from './StatusBadge'
 import InlineText from './InlineText'
 import VerticalStepper from './VerticalStepper'
 import CommentsSection from './CommentsSection'
-import { REVIEW_METHODS, FACE_TO_FACE_SONCHUNGGEUM } from '../../lib/stage'
+import { REVIEW_METHODS, FACE_TO_FACE_SONCHUNGGEUM, COMPLETION_STAGE_OPTIONS, STAGES } from '../../lib/stage'
 import { CLASSIFY_OPTIONS } from '../../lib/businessDivision'
 import { BUSINESS_TYPES } from '../../lib/businessType'
+import { PROJECT_STAGES } from '../../lib/projectStage'
 import { useData } from '../../context/DataContext'
 import { useEscapeKey } from '../../lib/useEscapeKey'
 import DateField from './DateField'
@@ -15,6 +16,7 @@ export default function RecordModal({ record, onClose }) {
   const { updateRecord, deleteRecord, markSeen } = useData()
   const [actionError, setActionError] = useState(null)
   useEscapeKey(onClose)
+  const isCompletion = (record?.category ?? 'review') === 'completion'
 
   useEffect(() => {
     if (record?.isNew) markSeen(record.id)
@@ -112,16 +114,18 @@ export default function RecordModal({ record, onClose }) {
               {REVIEW_METHODS.map((m) => <option key={m} value={m}>{m}</option>)}
             </select>
           </Field>
-          <Field label="사업부문">
-            <select
-              value={record.businessDivision ?? ''}
-              onChange={(e) => update({ businessDivision: e.target.value || null })}
-              className="w-full rounded-md border border-line bg-white px-2 py-1 text-sm outline-none focus:border-indigo"
-            >
-              <option value="">미지정</option>
-              {CLASSIFY_OPTIONS.map((d) => <option key={d} value={d}>{d}</option>)}
-            </select>
-          </Field>
+          {!isCompletion && (
+            <Field label="사업부문">
+              <select
+                value={record.businessDivision ?? ''}
+                onChange={(e) => update({ businessDivision: e.target.value || null })}
+                className="w-full rounded-md border border-line bg-white px-2 py-1 text-sm outline-none focus:border-indigo"
+              >
+                <option value="">미지정</option>
+                {CLASSIFY_OPTIONS.map((d) => <option key={d} value={d}>{d}</option>)}
+              </select>
+            </Field>
+          )}
           <Field label="적용사업"><InlineText value={record.appliedBusiness} onSave={(v) => update({ appliedBusiness: v })} /></Field>
           <Field label="계약일자"><DateField value={record.contractDate} onChange={(v) => update({ contractDate: v })} /></Field>
           <Field label="최종납기"><DateField value={record.dueDate} onChange={(v) => update({ dueDate: v })} /></Field>
@@ -135,6 +139,21 @@ export default function RecordModal({ record, onClose }) {
               {BUSINESS_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
             </select>
           </Field>
+          {isCompletion && (
+            <>
+              <Field label="연구소명"><InlineText value={record.labName} onSave={(v) => update({ labName: v })} /></Field>
+              <Field label="사업단계">
+                <select
+                  value={record.projectStage ?? ''}
+                  onChange={(e) => update({ projectStage: e.target.value || null })}
+                  className="w-full rounded-md border border-line bg-white px-2 py-1 text-sm outline-none focus:border-indigo"
+                >
+                  <option value="">미지정</option>
+                  {PROJECT_STAGES.map((s) => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </Field>
+            </>
+          )}
         </div>
 
         {record.autoClassification && (
@@ -178,7 +197,19 @@ export default function RecordModal({ record, onClose }) {
         <div className="mb-2 flex items-center justify-between">
           <h3 className="text-sm font-semibold text-ink">진행 단계</h3>
         </div>
-        <VerticalStepper record={record} onUpdate={update} />
+        {isCompletion ? (
+          // 완료보고는 CFT 8개 부서 날짜로 역산하지 않고 엑셀에서 받은(또는 직접 지정한) 단계를
+          // 그대로 쓴다 — VerticalStepper 대신 단순 select.
+          <select
+            value={record.stageOverride ?? 'U'}
+            onChange={(e) => update({ stageOverride: e.target.value })}
+            className="w-full rounded-md border border-line bg-white px-2 py-1.5 text-sm outline-none focus:border-indigo"
+          >
+            {COMPLETION_STAGE_OPTIONS.map((code) => <option key={code} value={code}>{STAGES[code].label}</option>)}
+          </select>
+        ) : (
+          <VerticalStepper record={record} onUpdate={update} />
+        )}
 
         <div className="mt-6">
           <p className="mb-1.5 text-xs font-medium text-slate">비고</p>

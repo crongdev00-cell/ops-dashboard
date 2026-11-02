@@ -60,7 +60,17 @@ export const STAGE_GROUPS = [
 
 const hasDate = (v) => !!v
 
+// 완료보고(category:'completion') 레코드의 "진행 단계" select에서 고를 수 있는 코드 —
+// 완료보고 엑셀 템플릿의 진행 단계 값셋(PM작성중/작성완료/CFT검토중/안내완료/결재완료/미실시)과
+// 1:1 대응. D(검토완료)/NA(대상아님)/CANCEL(취소)은 이 템플릿에 없는 값이라 제외.
+export const COMPLETION_STAGE_OPTIONS = ['U', 'N', 'A', 'B', 'C', 'E', 'F']
+
 export function computeStage(record) {
+  // 완료보고 레코드는 CFT 8개 부서 날짜로 역산하지 않는다 — 완료보고 엑셀 자체가 CFT 검토 항목이
+  // 2개뿐(개발품질/원가분석)이라 우리 8개 부서 게이트와 안 맞는다. 업로드/수정 시 직접 지정한
+  // stageOverride를 그대로 쓴다.
+  if ((record.category ?? 'review') === 'completion') return STAGES[record.stageOverride] ?? STAGES.U
+
   const y = (record.reviewMethod ?? '').trim()
   if (y === '대상아님') return STAGES.NA
   if (y === '미실시') return STAGES.N

@@ -5,7 +5,7 @@ import InlineText from '../common/InlineText'
 import VerticalStepper from '../common/VerticalStepper'
 import CommentsSection from '../common/CommentsSection'
 import MetaTags from '../common/MetaTags'
-import { REVIEW_METHODS } from '../../lib/stage'
+import { REVIEW_METHODS, COMPLETION_STAGE_OPTIONS, STAGES } from '../../lib/stage'
 import { CLASSIFY_OPTIONS } from '../../lib/businessDivision'
 import { useData } from '../../context/DataContext'
 import { SORT_FIELDS, compareRecords, buildYearGroups } from '../../lib/recordSort'
@@ -186,20 +186,32 @@ export default function MasterDetailView() {
               }}
             />
           </Meta>
-          <Meta icon={Layers} label="사업부문">
-            <select
-              value={selected.businessDivision ?? ''}
-              onChange={(e) => update({ businessDivision: e.target.value || null })}
-              className="w-full rounded-md border border-transparent bg-transparent text-sm font-medium text-ink hover:border-line focus:border-indigo focus:outline-none"
-            >
-              <option value="">미지정</option>
-              {CLASSIFY_OPTIONS.map((d) => <option key={d} value={d}>{d}</option>)}
-            </select>
-          </Meta>
+          {(selected.category ?? 'review') !== 'completion' && (
+            <Meta icon={Layers} label="사업부문">
+              <select
+                value={selected.businessDivision ?? ''}
+                onChange={(e) => update({ businessDivision: e.target.value || null })}
+                className="w-full rounded-md border border-transparent bg-transparent text-sm font-medium text-ink hover:border-line focus:border-indigo focus:outline-none"
+              >
+                <option value="">미지정</option>
+                {CLASSIFY_OPTIONS.map((d) => <option key={d} value={d}>{d}</option>)}
+              </select>
+            </Meta>
+          )}
         </div>
 
         <h3 className="mb-4 text-sm font-semibold text-ink">진행 단계</h3>
-        <VerticalStepper record={selected} onUpdate={update} />
+        {(selected.category ?? 'review') === 'completion' ? (
+          <select
+            value={selected.stageOverride ?? 'U'}
+            onChange={(e) => update({ stageOverride: e.target.value })}
+            className="w-full rounded-md border border-line bg-white px-2 py-1.5 text-sm outline-none focus:border-indigo"
+          >
+            {COMPLETION_STAGE_OPTIONS.map((code) => <option key={code} value={code}>{STAGES[code].label}</option>)}
+          </select>
+        ) : (
+          <VerticalStepper record={selected} onUpdate={update} />
+        )}
 
         <div className="mt-6">
           <p className="mb-1.5 text-xs font-medium text-slate">비고</p>

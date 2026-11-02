@@ -299,5 +299,27 @@ export function createDummyData() {
       pmRequest: null, pmDue: null, pmComplete: null, cftRequest: null, cftAi: null, cftSwTest: null, cftPurchase: null, cftQuality: null, cftCostAnalysis: null, cftMns: null, cftSystemEng: null, cftBizMgmt: null, notice: null, approval: null,
       note: '예외 케이스 — 국책사업도 드물게 PM 열이 비어 올 수 있음("PM 미배정" 필터 확인용)',
     }),
+
+    // ── 완료보고(category: 'completion') 2건 — original_complete_report_data_template.xlsx 업로드로
+    // 생성되는 레코드 모양을 흉내낸다. computeStage()가 CFT 날짜 역산이 아니라 stageOverride를
+    // 직접 쓰는 걸 데모에서도 확인할 수 있게 둠.
+    rec({
+      category: 'completion', contractName: '차기군단 지상통제 시제', contractOrg: '국방ㅁㅁ연구소',
+      contractMethod: '일반개산계약', businessType: '연구개발(무기체계)', projectStage: '체계개발',
+      labName: '위성연구소', pm: '아무개', deptName: '우주사업부', bm: '김길동',
+      amount: 14921, contractDate: daysAgo(900), dueDate: daysAgo(10),
+      reviewMethod: '서면보고(본부장)', stageOverride: 'F',
+      businessDivision: null, autoClassification: null, classificationReason: null, classificationConfirmed: true, isSonchunggeum: false,
+      note: '완료보고 업로드 예시 — 이미 결재완료까지 끝난 건',
+    }),
+    rec({
+      category: 'completion', contractName: '수중센서 체계 완료보고 예시', contractOrg: '국방기술품질원',
+      contractMethod: '단계정산', businessType: '연구개발(핵심기술)', projectStage: '응용연구',
+      labName: '해양연구소', pm: '박완료', deptName: '해양사업부', bm: '이보고',
+      amount: 5400, contractDate: daysAgo(500), dueDate: daysAgo(3),
+      reviewMethod: '서면보고(본부장)', stageOverride: 'C',
+      businessDivision: null, autoClassification: null, classificationReason: null, classificationConfirmed: true, isSonchunggeum: false,
+      note: '완료보고 업로드 예시 — 아직 CFT검토중, 2025-12-29 이후 납기라 미실시로 강제되지 않음',
+    }),
   ]
 }

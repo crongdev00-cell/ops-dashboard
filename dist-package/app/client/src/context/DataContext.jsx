@@ -63,7 +63,14 @@ async function api(path, options) {
   return data
 }
 
-export function DataProvider({ children }) {
+// 개발심의회 안건 중 완료보고로 "넘어가는" 건 — 최종납기가 오늘보다 지났으면 개발심의회 쪽에서는
+// 빠지고 완료보고 쪽에만 보인다(배타적 이동, 사용자 확인). 저장된 값을 옮기는 게 아니라 조회 시점마다
+// 다시 계산하므로, 날짜가 바뀌면(혹은 되돌아가면) 소속도 매일 자동으로 다시 갈린다.
+function isOverdueIntoCompletion(record, todayIso) {
+  return (record.category ?? 'review') !== 'completion' && !!record.dueDate && record.dueDate < todayIso
+}
+
+export function DataProvider({ children, module = 'review' }) {
   const [records, setRecords] = useState([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(null)
@@ -258,6 +265,26 @@ export function DataProvider({ children }) {
     }
   }
 
+  const importCompletionFile = async (file) => {
+    setMigrating(true)
+    setMigrateError(null)
+    try {
+      const result = await api('/api/projects/import-completion', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/octet-stream' },
+        body: file,
+      })
+      setRecords(result.records)
+      await refreshHistory()
+      return result.summary
+    } catch (err) {
+      setMigrateError(`완료보고 업로드 실패: ${err.message}`)
+      throw err
+    } finally {
+      setMigrating(false)
+    }
+  }
+
   const saveCurrentFilter = (name) => setSavedFilters((prev) => [...prev, { id: `${Date.now()}`, name, filters }])
   const applySavedFilter = (id) => {
     const found = savedFilters.find((f) => f.id === id)
@@ -274,16 +301,29 @@ export function DataProvider({ children }) {
   }
   const clearSelection = () => setSelectedIds(new Set())
 
-  const activeRecords = useMemo(() => records.filter((r) => !r.excluded), [records])
+  // 현재 모듈(개발심의회/완료보고)에 속하는 레코드만 — 이후 모든 필터링은 이 집합 위에서 그대로
+  // 돌아간다(FilterBar/진행 단계 체크박스 등 기존 파이프라인을 완전히 재사용).
+  const moduleRecords = useMemo(() => {
+    const todayIso = new Date().toISOString().slice(0, 10)
+    if (module === 'completion') {
+      return records.filter((r) => (r.category ?? 'review') === 'completion' || isOverdueIntoCompletion(r, todayIso))
+    }
+    return records.filter((r) => !isOverdueIntoCompletion(r, todayIso) && (r.category ?? 'review') !== 'completion')
+  }, [records, module])
+
+  const activeRecords = useMemo(() => moduleRecords.filter((r) => !r.excluded), [moduleRecords])
 
   // 부서 탭(미래전장사업부문/그 외 부문/미지정/전체)만 반영한 레코드 — 부서·PM 드롭다운의
   // 선택지 범위를 정하는 데 쓴다. dept/pm/stage 등 자기 자신 아래 필터는 반영하지 않는다 —
   // 그렇지 않으면 부서를 하나 고르는 순간 PM 드롭다운에서 다른 부서 소속 PM들이 사라지는
   // 식으로 서로를 계속 좁혀버려서 필터를 풀 방법이 없어진다.
   const divisionScopedRecords = useMemo(() => {
-    const base = filters.showExcluded ? records : activeRecords
+    const base = filters.showExcluded ? moduleRecords : activeRecords
+    // 완료보고 레코드는 businessDivision을 아예 안 쓴다(개념 자체가 없음) — 부문 탭으로 걸러지면
+    // 업로드/추가 직후 아무것도 안 보이는 모순이 생기므로, 완료보고 모듈에서는 부문 필터를 끈다.
+    if (module === 'completion') return base
     return base.filter((r) => matchesDivision(r, filters.division))
-  }, [records, activeRecords, filters.showExcluded, filters.division])
+  }, [moduleRecords, activeRecords, filters.showExcluded, filters.division, module])
 
   const depts = useMemo(() => [...new Set(divisionScopedRecords.map((r) => r.deptName).filter(Boolean))], [divisionScopedRecords])
   const pms = useMemo(() => [...new Set(divisionScopedRecords.map((r) => r.pm).filter(Boolean))], [divisionScopedRecords])
@@ -291,9 +331,9 @@ export function DataProvider({ children }) {
   const visibleRecords = useMemo(() => {
     const q = filters.query.trim().toLowerCase()
     const today = new Date().toISOString().slice(0, 10)
-    return records.filter((r) => {
+    return moduleRecords.filter((r) => {
       if (!filters.showExcluded && r.excluded) return false
-      if (!matchesDivision(r, filters.division)) return false
+      if (module !== 'completion' && !matchesDivision(r, filters.division)) return false
       if (filters.dept !== 'all' && r.deptName !== filters.dept) return false
       if (filters.pm !== 'all' && r.pm !== filters.pm) return false
       if (!filters.stage.has(computeStage(r).code)) return false
@@ -308,7 +348,7 @@ export function DataProvider({ children }) {
       if (filters.needsClassificationOnly && !needsClassification(r)) return false
       return true
     })
-  }, [records, filters])
+  }, [moduleRecords, filters, module])
 
   const value = useMemo(
     () => ({
@@ -319,10 +359,10 @@ export function DataProvider({ children }) {
       filters, setFilters, depts, pms,
       savedFilters, saveCurrentFilter, applySavedFilter, deleteSavedFilter,
       syncing, syncError, lastSync, syncPortalFile, syncGovPortalFile, refreshAll,
-      migrating, migrateError, migrateLegacyFile,
+      migrating, migrateError, migrateLegacyFile, importCompletionFile, module,
     }),
     [records, activeRecords, divisionScopedRecords, visibleRecords, loading, loadError, selectedId, history, comments,
-      selectedIds, filters, depts, pms, savedFilters, syncing, syncError, lastSync, migrating, migrateError]
+      selectedIds, filters, depts, pms, savedFilters, syncing, syncError, lastSync, migrating, migrateError, module]
   )
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>

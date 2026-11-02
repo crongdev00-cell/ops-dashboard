@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { X } from 'lucide-react'
 import { BUSINESS_DIVISIONS, OUR_DIVISION } from '../lib/businessDivision'
 import { BUSINESS_TYPES } from '../lib/businessType'
+import { PROJECT_STAGES } from '../lib/projectStage'
+import { COMPLETION_STAGE_OPTIONS, STAGES } from '../lib/stage'
 import { useData } from '../context/DataContext'
 import { useEscapeKey } from '../lib/useEscapeKey'
 
@@ -9,7 +11,8 @@ import { useEscapeKey } from '../lib/useEscapeKey'
 const GOV_STAGES = ['사업반영', '협약확정', '협약종료']
 
 export default function AddRecordModal({ onClose, onCreated }) {
-  const { addRecord } = useData()
+  const { addRecord, module } = useData()
+  const isCompletion = module === 'completion'
   const [contractName, setContractName] = useState('')
   const [bm, setBm] = useState('')
   const [deptName, setDeptName] = useState('')
@@ -19,6 +22,8 @@ export default function AddRecordModal({ onClose, onCreated }) {
   const [businessType, setBusinessType] = useState('')
   const [amount, setAmount] = useState('')
   const [govStage, setGovStage] = useState('')
+  const [projectStage, setProjectStage] = useState('')
+  const [stageOverride, setStageOverride] = useState('U')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
   useEscapeKey(onClose)
@@ -36,10 +41,13 @@ export default function AddRecordModal({ onClose, onCreated }) {
         deptName: deptName.trim() || null,
         pm: pm.trim() || null,
         pmDeptName: pmDeptName.trim() || null,
-        businessDivision,
+        businessDivision: isCompletion ? null : businessDivision,
         businessType: businessType || null,
         amount: amount.trim() === '' ? null : Number(amount),
-        govStage: govStage || null,
+        category: module,
+        ...(isCompletion
+          ? { projectStage: projectStage || null, stageOverride }
+          : { govStage: govStage || null }),
       })
       onClose()
       onCreated?.(created)
@@ -52,7 +60,7 @@ export default function AddRecordModal({ onClose, onCreated }) {
 
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/30 p-4" onClick={onClose}>
-      <form onSubmit={submit} className="w-full max-w-md rounded-2xl bg-surface p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+      <form onSubmit={submit} className="max-h-[85vh] w-full max-w-md overflow-y-auto rounded-2xl bg-surface p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-ink">새 안건 추가</h2>
           <button type="button" onClick={onClose} className="text-slate hover:text-ink"><X size={18} /></button>
@@ -74,11 +82,13 @@ export default function AddRecordModal({ onClose, onCreated }) {
           <Field label="PM 부서">
             <input value={pmDeptName} onChange={(e) => setPmDeptName(e.target.value)} className="w-full rounded-md border border-line bg-paper px-2.5 py-1.5 text-sm outline-none focus:border-indigo" />
           </Field>
-          <Field label="사업부문">
-            <select value={businessDivision} onChange={(e) => setBusinessDivision(e.target.value)} className="w-full rounded-md border border-line bg-paper px-2.5 py-1.5 text-sm outline-none focus:border-indigo">
-              {BUSINESS_DIVISIONS.map((d) => <option key={d} value={d}>{d}</option>)}
-            </select>
-          </Field>
+          {!isCompletion && (
+            <Field label="사업부문">
+              <select value={businessDivision} onChange={(e) => setBusinessDivision(e.target.value)} className="w-full rounded-md border border-line bg-paper px-2.5 py-1.5 text-sm outline-none focus:border-indigo">
+                {BUSINESS_DIVISIONS.map((d) => <option key={d} value={d}>{d}</option>)}
+              </select>
+            </Field>
+          )}
           <Field label="사업형태">
             <select value={businessType} onChange={(e) => setBusinessType(e.target.value)} className="w-full rounded-md border border-line bg-paper px-2.5 py-1.5 text-sm outline-none focus:border-indigo">
               <option value="">미지정</option>
@@ -88,12 +98,28 @@ export default function AddRecordModal({ onClose, onCreated }) {
           <Field label="계약금액(백만원)">
             <input value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="예: 30000" className="w-full rounded-md border border-line bg-paper px-2.5 py-1.5 text-sm outline-none focus:border-indigo" />
           </Field>
-          <Field label="사업단계">
-            <select value={govStage} onChange={(e) => setGovStage(e.target.value)} className="w-full rounded-md border border-line bg-paper px-2.5 py-1.5 text-sm outline-none focus:border-indigo">
-              <option value="">미지정</option>
-              {GOV_STAGES.map((s) => <option key={s} value={s}>{s}</option>)}
-            </select>
-          </Field>
+          {isCompletion ? (
+            <>
+              <Field label="사업단계">
+                <select value={projectStage} onChange={(e) => setProjectStage(e.target.value)} className="w-full rounded-md border border-line bg-paper px-2.5 py-1.5 text-sm outline-none focus:border-indigo">
+                  <option value="">미지정</option>
+                  {PROJECT_STAGES.map((s) => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </Field>
+              <Field label="진행 단계">
+                <select value={stageOverride} onChange={(e) => setStageOverride(e.target.value)} className="w-full rounded-md border border-line bg-paper px-2.5 py-1.5 text-sm outline-none focus:border-indigo">
+                  {COMPLETION_STAGE_OPTIONS.map((code) => <option key={code} value={code}>{STAGES[code].label}</option>)}
+                </select>
+              </Field>
+            </>
+          ) : (
+            <Field label="사업단계">
+              <select value={govStage} onChange={(e) => setGovStage(e.target.value)} className="w-full rounded-md border border-line bg-paper px-2.5 py-1.5 text-sm outline-none focus:border-indigo">
+                <option value="">미지정</option>
+                {GOV_STAGES.map((s) => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </Field>
+          )}
         </div>
 
         {error && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">{error}</p>}

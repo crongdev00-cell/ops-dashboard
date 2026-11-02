@@ -25,6 +25,8 @@ export const BUSINESS_TYPES = [
   CORE_TECH_BUSINESS_TYPE,
   MAINTENANCE_BUSINESS_TYPE,
   '국책',
+  '미래도전',
+  '수출',
 ]
 
 // 대면보고는 결재권자가 부문장뿐이다(연구개발본부장 변형 폐지, 사용자 확인).

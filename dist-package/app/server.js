@@ -7,6 +7,7 @@ import { fileURLToPath } from 'url'
 import { parsePortalBuffer } from './lib/portalParser.js'
 import { parseGovBuffer } from './lib/govPortalParser.js'
 import { parseLegacyBuffer } from './lib/legacyParser.js'
+import { parseCompletionBuffer } from './lib/completionReportParser.js'
 import * as store from './lib/store.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -192,6 +193,20 @@ app.post('/api/projects/migrate-legacy', express.raw({ type: '*/*', limit: '80mb
     const backupDir = store.backupDataFiles()
     const summary = store.migrateLegacyRows(legacyRows)
     res.json({ summary, backupDir, records: store.getProjects() })
+  } catch (err) {
+    res.status(400).json({ error: err.message })
+  }
+})
+
+// ── 완료보고 업로드 ──────────────────────────────────────────────
+// 고유 키가 없는 양식이라 매번 전부 신규 생성한다(매칭/갱신 없음, 사용자 확인).
+app.post('/api/projects/import-completion', express.raw({ type: '*/*', limit: '80mb' }), (req, res) => {
+  const buffer = req.body
+  if (!Buffer.isBuffer(buffer) || buffer.length === 0) return res.status(400).json({ error: '파일 데이터가 없습니다.' })
+  try {
+    const rows = parseCompletionBuffer(buffer)
+    const summary = store.importCompletionReport(rows)
+    res.json({ summary, records: store.getProjects() })
   } catch (err) {
     res.status(400).json({ error: err.message })
   }

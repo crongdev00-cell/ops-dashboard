@@ -8,6 +8,7 @@ import CftOverdueBanner from './components/CftOverdueBanner'
 import ActivityLogPanel from './components/ActivityLogPanel'
 import PortalSyncButton from './components/PortalSyncButton'
 import LegacyUploadButton from './components/LegacyUploadButton'
+import CompletionUploadButton from './components/CompletionUploadButton'
 import FlashButton from './components/common/FlashButton'
 import AddRecordModal from './components/AddRecordModal'
 import RecordModal from './components/common/RecordModal'
@@ -28,7 +29,7 @@ const VIEW_COMPONENTS = {
   ai: AiAssistantView,
 }
 
-function Shell() {
+function Shell({ module, setModule }) {
   const [view, setView] = useState('executive')
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [logOpen, setLogOpen] = useState(false)
@@ -80,7 +81,7 @@ function Shell() {
 
   return (
     <div className="flex h-screen">
-      <Sidebar view={view} onChange={setView} count={activeRecords.length} />
+      <Sidebar view={view} onChange={setView} count={activeRecords.length} module={module} onModuleChange={setModule} />
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex items-center justify-between border-b border-line bg-surface px-6 py-4">
           <div>
@@ -91,8 +92,14 @@ function Shell() {
             <FlashButton onClick={() => setAddOpen(true)} className="flex items-center gap-1.5 rounded-lg border border-line bg-paper px-3 py-1.5 text-xs text-slate hover:bg-line/40">
               <Plus size={13} /> 안건 추가
             </FlashButton>
-            <PortalSyncButton />
-            <LegacyUploadButton />
+            {module === 'review' ? (
+              <>
+                <PortalSyncButton />
+                <LegacyUploadButton />
+              </>
+            ) : (
+              <CompletionUploadButton />
+            )}
             <FlashButton onClick={() => setLogOpen(true)} className="flex items-center gap-1.5 rounded-lg border border-line bg-paper px-3 py-1.5 text-xs text-slate hover:bg-line/40">
               <History size={13} /> 변경 이력{history.length > 0 && ` (${history.length})`}
             </FlashButton>
@@ -105,9 +112,15 @@ function Shell() {
 
         {/* 배너의 건수는 부문 탭과 무관하게 전체 기준으로 센다 — "전체 확인하기"를 눌렀을 때도
             division을 'all'로 같이 바꿔야, 지금 다른 부문 탭이 선택되어 있어서 그중 일부가
-            가려지는 바람에 "전체"라는 말과 실제로 보이는 건수가 안 맞는 모순을 막을 수 있다. */}
-        <OverdueBanner onViewOverdue={() => { setFilters((f) => ({ ...f, overdueOnly: true, division: 'all' })); setView('grid') }} />
-        <CftOverdueBanner onViewCftOverdue={() => { setFilters((f) => ({ ...f, cftOverdueOnly: true, division: 'all' })); setView('grid') }} />
+            가려지는 바람에 "전체"라는 말과 실제로 보이는 건수가 안 맞는 모순을 막을 수 있다.
+            완료보고 모듈에서는 안 보여준다 — 납기 지난 안건은 이미 그 모듈로 빠졌으므로 이 배너의
+            "완료기한이 지난 안건" 대상이 자연히 0건이 된다. */}
+        {module === 'review' && (
+          <>
+            <OverdueBanner onViewOverdue={() => { setFilters((f) => ({ ...f, overdueOnly: true, division: 'all' })); setView('grid') }} />
+            <CftOverdueBanner onViewCftOverdue={() => { setFilters((f) => ({ ...f, cftOverdueOnly: true, division: 'all' })); setView('grid') }} />
+          </>
+        )}
         {view !== 'ai' && <FilterBar />}
 
         <main className="min-h-0 flex-1 overflow-auto p-6">
@@ -128,9 +141,10 @@ function Shell() {
 }
 
 export default function App() {
+  const [module, setModule] = useState('review')
   return (
-    <DataProvider>
-      <Shell />
+    <DataProvider module={module}>
+      <Shell module={module} setModule={setModule} />
     </DataProvider>
   )
 }

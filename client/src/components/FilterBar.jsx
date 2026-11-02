@@ -10,7 +10,7 @@ const DIVISION_LABELS = { [OUR_DIVISION]: OUR_DIVISION, '그 외 부문': '그 �
 export default function FilterBar() {
   const {
     filters, setFilters, depts, pms, visibleRecords, activeRecords, divisionScopedRecords, records,
-    savedFilters, saveCurrentFilter, applySavedFilter, deleteSavedFilter,
+    savedFilters, saveCurrentFilter, applySavedFilter, deleteSavedFilter, module,
   } = useData()
   const isDefaultStage = (set) => {
     const def = defaultStageFilter()
@@ -42,7 +42,7 @@ export default function FilterBar() {
 
   return (
     <div className="border-b border-line bg-surface">
-      <div className="flex items-center gap-1 px-6 pt-2.5">
+      {module !== 'completion' && <div className="flex items-center gap-1 px-6 pt-2.5">
         {DIVISION_TABS.map((d) => (
           <button
             key={d}
@@ -58,7 +58,7 @@ export default function FilterBar() {
             )}
           </button>
         ))}
-      </div>
+      </div>}
 
       <div className="flex flex-wrap items-center gap-2 px-6 py-2.5">
         <div className="flex items-center gap-1.5 rounded-lg border border-line bg-paper px-2.5 py-1.5">

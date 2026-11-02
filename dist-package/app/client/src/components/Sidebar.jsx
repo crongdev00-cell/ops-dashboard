@@ -13,7 +13,12 @@ export const VIEWS = [
 
 export const AI_VIEW = { key: 'ai', label: 'AI 어시스턴트', icon: Sparkles }
 
-export default function Sidebar({ view, onChange, count }) {
+export const MODULES = [
+  { key: 'review', label: '개발심의회' },
+  { key: 'completion', label: '완료보고' },
+]
+
+export default function Sidebar({ view, onChange, count, module, onModuleChange }) {
   return (
     <aside className="flex h-full w-[240px] shrink-0 flex-col border-r border-line bg-surface">
       <div className="flex items-center gap-2 px-5 py-5">
@@ -24,6 +29,20 @@ export default function Sidebar({ view, onChange, count }) {
           <p className="text-sm font-semibold text-ink">개발심의회</p>
           <p className="text-[11px] text-slate">대시보드</p>
         </div>
+      </div>
+
+      <div className="mx-3 mb-2 flex gap-1 rounded-lg border border-line bg-paper p-1">
+        {MODULES.map((m) => (
+          <button
+            key={m.key}
+            onClick={() => onModuleChange(m.key)}
+            className={`flex-1 rounded-md px-2 py-1.5 text-xs font-medium transition-colors ${
+              module === m.key ? 'bg-surface text-indigo shadow-sm' : 'text-slate hover:text-ink'
+            }`}
+          >
+            {m.label}
+          </button>
+        ))}
       </div>
 
       <nav className="flex-1 space-y-0.5 overflow-y-auto px-3">
