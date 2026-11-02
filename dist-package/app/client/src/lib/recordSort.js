@@ -13,6 +13,7 @@ export const SORT_FIELDS = [
   { key: 'progress', label: '진행률', type: 'progress' },
   { key: 'amount', label: '계약금액(백만원)', type: 'number' },
   { key: 'contractDate', label: '계약일자', type: 'date' },
+  { key: 'dueDate', label: '최종납기', type: 'date' },
   { key: 'pmRequest', label: 'PM요청', type: 'date' },
   { key: 'approval', label: '결재완료', type: 'date' },
 ]

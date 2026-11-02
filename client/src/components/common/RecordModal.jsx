@@ -9,6 +9,7 @@ import { CLASSIFY_OPTIONS } from '../../lib/businessDivision'
 import { BUSINESS_TYPES } from '../../lib/businessType'
 import { useData } from '../../context/DataContext'
 import { useEscapeKey } from '../../lib/useEscapeKey'
+import DateField from './DateField'
 
 export default function RecordModal({ record, onClose }) {
   const { updateRecord, deleteRecord, markSeen } = useData()
@@ -122,6 +123,8 @@ export default function RecordModal({ record, onClose }) {
             </select>
           </Field>
           <Field label="적용사업"><InlineText value={record.appliedBusiness} onSave={(v) => update({ appliedBusiness: v })} /></Field>
+          <Field label="계약일자"><DateField value={record.contractDate} onChange={(v) => update({ contractDate: v })} /></Field>
+          <Field label="최종납기"><DateField value={record.dueDate} onChange={(v) => update({ dueDate: v })} /></Field>
           <Field label="사업형태">
             <select
               value={record.businessType ?? ''}

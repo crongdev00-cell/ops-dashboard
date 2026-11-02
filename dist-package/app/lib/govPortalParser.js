@@ -53,8 +53,10 @@ export function parseGovBuffer(buffer) {
       const raw = row[idx]
       if (DATE_FIELDS.has(field)) rec[field] = normalizeDate(raw)
       else if (AMOUNT_FIELDS.has(field)) {
-        const n = raw === null || raw === '' ? null : Number(raw)
-        rec[field] = n === null || Number.isNaN(n) ? null : n
+        // 국책사업 포털 양식의 금액은 원 단위 — portalParser.js와 동일하게 백만원으로 변환한다
+        // (버그 수정: 이 변환이 빠져있어서 국책사업 계약금액이 원 단위로 저장되고 있었음).
+        const n = raw === null || raw === '' ? null : Number(raw) / 1_000_000
+        rec[field] = n === null || Number.isNaN(n) ? null : Math.round(n)
       } else rec[field] = cleanText(raw)
     }
     records.push(rec)

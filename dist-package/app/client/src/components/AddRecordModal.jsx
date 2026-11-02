@@ -5,6 +5,9 @@ import { BUSINESS_TYPES } from '../lib/businessType'
 import { useData } from '../context/DataContext'
 import { useEscapeKey } from '../lib/useEscapeKey'
 
+// 국책사업 전용 govStage 필드 값(사업반영/협약확정/협약종료) — 수동 추가 안건에도 같은 값으로 재사용(피드백).
+const GOV_STAGES = ['사업반영', '협약확정', '협약종료']
+
 export default function AddRecordModal({ onClose, onCreated }) {
   const { addRecord } = useData()
   const [contractName, setContractName] = useState('')
@@ -15,6 +18,7 @@ export default function AddRecordModal({ onClose, onCreated }) {
   const [businessDivision, setBusinessDivision] = useState(OUR_DIVISION)
   const [businessType, setBusinessType] = useState('')
   const [amount, setAmount] = useState('')
+  const [govStage, setGovStage] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
   useEscapeKey(onClose)
@@ -35,6 +39,7 @@ export default function AddRecordModal({ onClose, onCreated }) {
         businessDivision,
         businessType: businessType || null,
         amount: amount.trim() === '' ? null : Number(amount),
+        govStage: govStage || null,
       })
       onClose()
       onCreated?.(created)
@@ -82,6 +87,12 @@ export default function AddRecordModal({ onClose, onCreated }) {
           </Field>
           <Field label="계약금액(백만원)">
             <input value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="예: 30000" className="w-full rounded-md border border-line bg-paper px-2.5 py-1.5 text-sm outline-none focus:border-indigo" />
+          </Field>
+          <Field label="사업단계">
+            <select value={govStage} onChange={(e) => setGovStage(e.target.value)} className="w-full rounded-md border border-line bg-paper px-2.5 py-1.5 text-sm outline-none focus:border-indigo">
+              <option value="">미지정</option>
+              {GOV_STAGES.map((s) => <option key={s} value={s}>{s}</option>)}
+            </select>
           </Field>
         </div>
 

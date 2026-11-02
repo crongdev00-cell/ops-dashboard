@@ -12,7 +12,8 @@ export const CORE_TECH_THRESHOLD = 15_000 // 150억원, 백만원 단위
 // 미실시 예외 조건(사업 특성 고려 참고용 — 자동 적용 안 함)과 직접 대응되는 사업형태 값.
 export const MAINTENANCE_BUSINESS_TYPE = '운영유지(정비/수리부속)'
 
-// 사업포털에 실제로 존재하는 사업형태 9종 — 포털 동기화든 사람이 직접 지정하든 같은 값 집합을 쓴다.
+// 사업포털에 실제로 존재하는 사업형태 9종 + 국책사업 전용 "국책" — 포털 동기화든 사람이 직접 지정하든
+// 같은 값 집합을 쓴다.
 export const BUSINESS_TYPES = [
   '사업기타',
   '양산(국내)',
@@ -23,19 +24,19 @@ export const BUSINESS_TYPES = [
   '연구개발(해외)',
   CORE_TECH_BUSINESS_TYPE,
   MAINTENANCE_BUSINESS_TYPE,
+  '국책',
 ]
 
-// 대면보고는 결재권자가 둘로 갈린다 — 손충금 사업이면 부문장, 그 외(여기서 자동 추천하는 기본
-// 케이스)는 연구개발본부장. 손충금 여부는 사람이 체크하는 값이라 여기서는 판단하지 않고(답변 3-2),
-// 담당자가 1차 분류 화면에서 손충금 사업 체크 + 확정을 누를 때 '대면보고(부문장)'으로 덮어쓴다.
-export const FACE_TO_FACE_DEFAULT = '대면보고(연구개발본부장)'
+// 대면보고는 결재권자가 부문장뿐이다(연구개발본부장 변형 폐지, 사용자 확인).
+export const FACE_TO_FACE = '대면보고(부문장)'
+export const SHEET_REPORT = '서면보고(본부장)'
 
 export function classifyReviewMethod(businessType, amount) {
   if (businessType === WEAPON_SYSTEM_BUSINESS_TYPE && Number(amount) >= WEAPON_SYSTEM_THRESHOLD) {
-    return { autoClassification: FACE_TO_FACE_DEFAULT, classificationReason: '무기체계 300억원 이상' }
+    return { autoClassification: FACE_TO_FACE, classificationReason: '무기체계 300억원 이상' }
   }
   if (businessType === CORE_TECH_BUSINESS_TYPE && Number(amount) >= CORE_TECH_THRESHOLD) {
-    return { autoClassification: FACE_TO_FACE_DEFAULT, classificationReason: '핵심기술 150억원 이상' }
+    return { autoClassification: FACE_TO_FACE, classificationReason: '핵심기술 150억원 이상' }
   }
-  return { autoClassification: '서면보고', classificationReason: '기준 금액 미만 (서면보고 기본 적용)' }
+  return { autoClassification: SHEET_REPORT, classificationReason: '기준 금액 미만 (서면보고 기본 적용)' }
 }

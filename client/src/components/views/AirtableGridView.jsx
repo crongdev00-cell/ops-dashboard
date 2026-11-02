@@ -23,6 +23,7 @@ const ALL_COLS = [
   { key: 'progress', label: '진행률' },
   { key: 'amount', label: '계약금액(백만원)' },
   { key: 'contractDate', label: '계약일자' },
+  { key: 'dueDate', label: '최종납기' },
   { key: 'pmRequest', label: 'PM요청' },
   { key: 'approval', label: '결재완료' },
 ]
@@ -107,6 +108,7 @@ export default function AirtableGridView() {
         )}
         {visibleCols.has('amount') && <td className="px-4 py-2 text-right text-slate tabular-nums">{r.amount != null ? Number(r.amount).toLocaleString('ko-KR') : '-'}</td>}
         {visibleCols.has('contractDate') && <td className="px-4 py-2 text-slate">{formatDate(r.contractDate)}</td>}
+        {visibleCols.has('dueDate') && <td className="px-4 py-2 text-slate">{formatDate(r.dueDate)}</td>}
         {visibleCols.has('pmRequest') && <td className="px-4 py-2 text-slate">{formatDate(r.pmRequest)}</td>}
         {visibleCols.has('approval') && <td className="px-4 py-2 text-slate">{formatDate(r.approval)}</td>}
       </tr>

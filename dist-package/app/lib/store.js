@@ -1,13 +1,13 @@
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
-import { classifyReviewMethod, FACE_TO_FACE_DEFAULT } from './classify.js'
+import { classifyReviewMethod, FACE_TO_FACE, SHEET_REPORT } from './classify.js'
 
-const FACE_TO_FACE_SONCHUNGGEUM = '대면보고(부문장)'
-// client/src/lib/stage.js의 ELECTRONIC_APPROVAL과 같은 문자열이어야 한다(의도적 중복, 서버/클라 분리).
-const ELECTRONIC_APPROVAL = '전자결재(본부장)'
+// client/src/lib/stage.js의 FACE_TO_FACE_SONCHUNGGEUM/SHEET_REPORT와 같은 문자열이어야 한다(의도적 중복, 서버/클라 분리).
+const FACE_TO_FACE_SONCHUNGGEUM = FACE_TO_FACE
 // 구 엑셀 심의방법 값 중 이미 신규 스키마 값 그대로인 것들 — 이 값들은 그대로 받아들인다.
-const LEGACY_REVIEW_METHOD_PASSTHROUGH = new Set(['미실시', '대상아님', '서면보고', FACE_TO_FACE_SONCHUNGGEUM, FACE_TO_FACE_DEFAULT, ELECTRONIC_APPROVAL])
+// 서면보고류("서면보고"/"전자결재")는 아래 migrateLegacyRows()에서 SHEET_REPORT로 직접 매핑한다.
+const LEGACY_REVIEW_METHOD_PASSTHROUGH = new Set(['미실시', '대상아님', FACE_TO_FACE_SONCHUNGGEUM])
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const DATA_DIR = process.env.OPS_DATA_DIR || path.join(__dirname, '..', 'data') // 테스트가 실데이터를 건드리지 않도록 오버라이드 가능
@@ -262,7 +262,7 @@ export function syncPortal(portalRows) {
 
 // 국책사업 전용 포털 업로드 — 계약번호(portalKey)가 아니라 내부관리번호(govKey)가 키다.
 // syncPortal과 거의 동일한 구조지만 금액/사업형태 기준 자동분류는 안 한다(이 양식엔 안 맞음) —
-// 대신 심의방법 기본값을 서면보고(전자결재)로 고정한다(사용자 요청).
+// 대신 심의방법 기본값을 서면보고(본부장)으로 고정한다(사용자 요청).
 export function syncGovPortal(govRows) {
   const now = new Date().toISOString()
   const byKey = new Map((projects ?? []).filter((p) => p.govKey).map((p) => [p.govKey, p]))
@@ -292,14 +292,14 @@ export function syncGovPortal(govRows) {
         projectType: '국책사업',
         excluded: false,
         isNew: true,
-        contractName: row.contractName ?? '', contractMethod: null, appliedBusiness: null, businessType: null, bm: null,
+        contractName: row.contractName ?? '', contractMethod: null, appliedBusiness: null, businessType: '국책', bm: null,
         businessDivision: null,
-        // 국책사업은 기본 심의방법을 서면보고(구 "전자결재")로 둔다 — 사용자 요청, 답변 참고.
-        pm: row.pm ?? null, pmDeptName: null, note: null, reviewMethod: '서면보고', chair: null, reviewDate: null, reviewResult: null, reviewContent: null,
+        // 국책사업은 기본 심의방법을 서면보고(본부장)으로 둔다 — 사용자 요청, 답변 참고.
+        pm: row.pm ?? null, pmDeptName: null, note: null, reviewMethod: SHEET_REPORT, chair: null, reviewDate: null, reviewResult: null, reviewContent: null,
         pmRequest: null, pmDue: null, pmComplete: null, cftRequest: null,
         cftAi: null, cftSwTest: null, cftPurchase: null, cftQuality: null, cftCostAnalysis: null, cftMns: null, cftSystemEng: null, cftBizMgmt: null,
         notice: null, approval: null,
-        autoClassification: '서면보고', classificationReason: '국책사업 기본 적용(전자결재)',
+        autoClassification: SHEET_REPORT, classificationReason: '국책사업 기본 적용(서면보고)',
         classificationConfirmed: true, isSonchunggeum: false,
         createdAt: now, updatedAt: now,
         ...govPatch,
@@ -359,22 +359,18 @@ export function migrateLegacyRows(legacyRows) {
   for (const row of legacyRows) {
     const existing = row.portalKey ? byKey.get(row.portalKey) : (row.govKey ? govByKey.get(row.govKey) : null)
 
-    // 심의방법은 그대로 옮기면 안 된다 — 구 엑셀은 대면보고(부문장)/(연구개발본부장) 구분이 생기기
-    // 전 값("심의회")을 쓰므로, 위원장(chair) 텍스트로 어느 쪽인지 판단한다. 판단 안 되면 필드 자체를
-    // 건드리지 않고(=미지정 유지) 리포트에 플래그만 남긴다.
+    // 심의방법은 그대로 옮기면 안 된다 — 구 엑셀은 "심의회"(→대면보고)를 쓰는데, 대면보고 결재권자는
+    // 부문장뿐이라(연구개발본부장 변형 폐지, 사용자 확인) chair 텍스트로 어느 쪽인지 따질 필요가 없다.
+    // "서면보고"/"전자결재"도 이제 같은 의미로 통일(서면보고(본부장))한다.
     // 원문을 NFC로 정규화하고 느슨하게(부분일치) 비교한다 — 옛 엑셀이 다른 프로그램을 거치며
     // 한글이 자모 분리(NFD)로 저장되거나 "전자결재(전결)"처럼 괄호가 덧붙는 경우가 있어서,
     // 정확히 같은 문자열(===)로만 비교하면 멀쩡한 값도 "미지정"으로 빠지는 문제가 있었다(사용자 리포트).
     const reviewMethodRaw = (row.reviewMethod ?? '').normalize('NFC').trim()
-    const chairRaw = (row.chair ?? '').normalize('NFC')
     let reviewMethod
     if (reviewMethodRaw === '심의회') {
-      if (chairRaw.includes('부문장')) reviewMethod = FACE_TO_FACE_SONCHUNGGEUM
-      else if (chairRaw.includes('대표이사') || chairRaw.includes('본부장')) reviewMethod = FACE_TO_FACE_DEFAULT
-      else unrecognizedReviewMethod.push({ contractName: row.contractName, raw: row.reviewMethod, chair: row.chair })
-    } else if (reviewMethodRaw.includes('전자결재')) {
-      // "심의회"와 달리 위원장 구분 없이 본부장 전결로 처리되던 건 — 서면보고와는 별개로 구분한다.
-      reviewMethod = ELECTRONIC_APPROVAL
+      reviewMethod = FACE_TO_FACE_SONCHUNGGEUM
+    } else if (reviewMethodRaw.includes('전자결재') || reviewMethodRaw === '서면보고') {
+      reviewMethod = SHEET_REPORT
     } else if (LEGACY_REVIEW_METHOD_PASSTHROUGH.has(reviewMethodRaw)) {
       reviewMethod = reviewMethodRaw
     } else if (reviewMethodRaw) {
@@ -402,10 +398,11 @@ export function migrateLegacyRows(legacyRows) {
       matched++
     } else {
       const note = row.note ? `[이관-미매칭, 수동확인 필요] ${row.note}` : '[이관-미매칭, 수동확인 필요]'
-      const businessType = row.businessType ?? null
+      const projectType = row.projectType === '국책사업' ? '국책사업' : '사업'
+      // 국책사업은 사업형태 컬럼이 엑셀에 따로 없으므로, projectType으로 판단해 "국책"을 기본 적용한다.
+      const businessType = row.businessType ?? (projectType === '국책사업' ? '국책' : null)
       const amount = row.amount ?? null
       const cls = classifyReviewMethod(businessType, amount)
-      const projectType = row.projectType === '국책사업' ? '국책사업' : '사업'
       const rec = {
         id: nextId++,
         portalKey: row.portalKey ?? null, govKey: row.govKey ?? null, projectType, excluded: false, isNew: false,

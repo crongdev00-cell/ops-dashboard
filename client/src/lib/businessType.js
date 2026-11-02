@@ -1,4 +1,4 @@
-// 사업형태 — 사업포털에 실제로 존재하는 값 9종. lib/classify.js의 BUSINESS_TYPES와 동일한 목록.
+// 사업형태 — 사업포털에 실제로 존재하는 값 9종 + 국책사업 전용 "국책". lib/classify.js의 BUSINESS_TYPES와 동일한 목록.
 // (서버의 분류 로직과 분리되어 있어 값 목록을 여기 한 번 더 정의 — businessDivision.js와 같은 패턴)
 export const BUSINESS_TYPES = [
   '사업기타',
@@ -10,4 +10,5 @@ export const BUSINESS_TYPES = [
   '연구개발(해외)',
   '연구개발(핵심기술)',
   '운영유지(정비/수리부속)',
+  '국책',
 ]

@@ -63,7 +63,7 @@ export default function VerticalStepper({ record, onUpdate }) {
                   {step.keys.map((dept) => (
                     <div key={dept.key}>
                       <p className="text-[11px] text-slate">{dept.label}</p>
-                      <DateField value={record[dept.key]} onChange={(v) => onUpdate({ [dept.key]: v })} />
+                      <DateField value={record[dept.key]} onChange={(v) => onUpdate({ [dept.key]: v })} allowNotApplicable />
                     </div>
                   ))}
                 </div>

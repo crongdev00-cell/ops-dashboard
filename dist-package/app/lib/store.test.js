@@ -86,7 +86,7 @@ test('portal sync 1차 자동판정: 신규 레코드에 autoClassification/clas
   store.seedProjects([])
   store.syncPortal([{ portalKey: 'KT-1', contractName: '무기체계 사업', businessType: '연구개발(무기체계)', amount: 30_000 }])
   const [rec] = store.getProjects()
-  assert.equal(rec.autoClassification, '대면보고(연구개발본부장)')
+  assert.equal(rec.autoClassification, '대면보고(부문장)')
   assert.match(rec.classificationReason, /무기체계/)
   assert.equal(rec.classificationConfirmed, false)
   assert.equal(rec.isSonchunggeum, false)
@@ -97,13 +97,13 @@ test('portal sync 재동기화 시 손충금 체크·확정 여부(팀 입력)�
   store.seedProjects([])
   store.syncPortal([{ portalKey: 'KT-1', contractName: '사업A', businessType: '연구개발(민수)', amount: 100 }])
   const [rec] = store.getProjects()
-  assert.equal(rec.autoClassification, '서면보고')
+  assert.equal(rec.autoClassification, '서면보고(본부장)')
   store.updateProject(rec.id, { isSonchunggeum: true, classificationConfirmed: true, reviewMethod: '대면보고(부문장)' })
 
   // 포털에서 금액이 무기체계 기준을 넘도록 갱신됨
   store.syncPortal([{ portalKey: 'KT-1', contractName: '사업A', businessType: '연구개발(무기체계)', amount: 30_000 }])
   const [updated] = store.getProjects()
-  assert.equal(updated.autoClassification, '대면보고(연구개발본부장)', '추천값은 최신 포털 데이터 기준으로 다시 계산되어야 한다')
+  assert.equal(updated.autoClassification, '대면보고(부문장)', '추천값은 최신 포털 데이터 기준으로 다시 계산되어야 한다')
   assert.equal(updated.isSonchunggeum, true, '팀이 체크한 손충금 여부는 재동기화로 사라지면 안 된다')
   assert.equal(updated.classificationConfirmed, true, '이미 확정한 건 재동기화로 다시 미확정 처리되면 안 된다')
   assert.equal(updated.reviewMethod, '대면보고(부문장)', '담당자가 확정한 심의방법(손충금 → 부문장)은 재동기화로 바뀌면 안 된다')
@@ -121,7 +121,7 @@ test('수기로 만든 안건이라도 사업형태+금액을 지정하면 생�
   const { store } = await freshStore()
   store.seedProjects([])
   const rec = store.createProject({ contractName: '무기체계 수동 등록', businessType: '연구개발(무기체계)', amount: 30_000 })
-  assert.equal(rec.autoClassification, '대면보고(연구개발본부장)')
+  assert.equal(rec.autoClassification, '대면보고(부문장)')
   assert.equal(rec.classificationConfirmed, false)
 })
 
@@ -131,7 +131,7 @@ test('updateProject로 사업형태를 바꾸면 추천 분류가 재계산되�
   const rec = store.createProject({ contractName: '수동 등록 안건' })
   store.updateProject(rec.id, { classificationConfirmed: true }) // 사전 조건: 이미 확정된 상태였다고 가정
   const updated = store.updateProject(rec.id, { businessType: '연구개발(무기체계)', amount: 30_000 })
-  assert.equal(updated.autoClassification, '대면보고(연구개발본부장)')
+  assert.equal(updated.autoClassification, '대면보고(부문장)')
   assert.equal(updated.classificationConfirmed, false, '분류 근거가 바뀌었으니 다시 확정 필요 상태가 되어야 한다')
 })
 
@@ -139,9 +139,9 @@ test('updateProject로 금액만 바꿔도 분류가 재계산된다', async () 
   const { store } = await freshStore()
   store.seedProjects([])
   const rec = store.createProject({ contractName: '핵심기술 수동 등록', businessType: '연구개발(핵심기술)', amount: 100 })
-  assert.equal(rec.autoClassification, '서면보고')
+  assert.equal(rec.autoClassification, '서면보고(본부장)')
   const updated = store.updateProject(rec.id, { amount: 15_000 })
-  assert.equal(updated.autoClassification, '대면보고(연구개발본부장)')
+  assert.equal(updated.autoClassification, '대면보고(부문장)')
   assert.equal(updated.classificationReason, '핵심기술 150억원 이상')
 })
 
@@ -178,18 +178,18 @@ test('migrateLegacyRows: 계약번호가 일치하면 TEAM_FIELDS만 패치하�
   store.seedProjects([])
   store.syncPortal([{ portalKey: 'KT-1', contractName: '포털 사업명', businessType: '민수', amount: 100 }])
   const summary = store.migrateLegacyRows([
-    { portalKey: 'KT-1', contractName: '구엑셀 사업명(무시됨)', pm: '김이관', pmDeptName: '이관연구소', reviewMethod: '서면보고' },
+    { portalKey: 'KT-1', contractName: '구엑셀 사업명(무시됨)', pm: '김이관', pmDeptName: '이관연구소', reviewMethod: '대면보고(부문장)' },
   ])
   assert.equal(summary.matched, 1)
   assert.equal(summary.created, 0)
   const [rec] = store.getProjects()
   assert.equal(rec.contractName, '포털 사업명', 'PORTAL_FIELD인 계약명은 레거시 업로드로 바뀌면 안 된다')
   assert.equal(rec.pm, '김이관')
-  assert.equal(rec.reviewMethod, '서면보고', '이미 신규 스키마 값인 심의방법은 그대로 받아들여야 한다 (확인필요로 플래그하면 안 됨)')
+  assert.equal(rec.reviewMethod, '대면보고(부문장)', '이미 신규 스키마 값인 심의방법은 그대로 받아들여야 한다 (확인필요로 플래그하면 안 됨)')
   assert.equal(rec.classificationConfirmed, true)
 })
 
-test('migrateLegacyRows: "심의회"는 위원장으로 대면보고 종류를 구분하고, 구분 안 되면 심의방법을 건드리지 않고 플래그만 남긴다', async () => {
+test('migrateLegacyRows: "심의회"는 위원장 텍스트와 무관하게 대면보고(부문장)로 통일한다(대면보고는 부문장뿐)', async () => {
   const { store } = await freshStore()
   store.seedProjects([])
   store.syncPortal([
@@ -203,9 +203,33 @@ test('migrateLegacyRows: "심의회"는 위원장으로 대면보고 종류를 �
   const recA = store.getProjects().find((p) => p.portalKey === 'KT-A')
   const recB = store.getProjects().find((p) => p.portalKey === 'KT-B')
   assert.equal(recA.reviewMethod, '대면보고(부문장)')
-  assert.equal(recB.reviewMethod, '미지정', '판단 안 되는 위원장이면 심의방법을 건드리지 않아야 한다')
-  assert.equal(summary.unrecognizedReviewMethod.length, 1)
-  assert.equal(summary.unrecognizedReviewMethod[0].contractName, 'B')
+  assert.equal(recB.reviewMethod, '대면보고(부문장)')
+  assert.equal(summary.unrecognizedReviewMethod.length, 0)
+})
+
+test('migrateLegacyRows: "전자결재"는 서면보고와 동일한 의미라 서면보고(본부장)으로 통일한다', async () => {
+  const { store } = await freshStore()
+  store.seedProjects([])
+  const summary = store.migrateLegacyRows([
+    { portalKey: null, contractName: '옛 전자결재 건', reviewMethod: '전자결재', pm: '김전결' },
+  ])
+  assert.equal(summary.created, 1)
+  assert.equal(summary.unrecognizedReviewMethod.length, 0)
+  const [rec] = store.getProjects()
+  assert.equal(rec.reviewMethod, '서면보고(본부장)')
+})
+
+test('migrateLegacyRows: 자모가 분리된(NFD) "전자결재"나 괄호가 덧붙은 변형도 인식한다', async () => {
+  const { store } = await freshStore()
+  store.seedProjects([])
+  const summary = store.migrateLegacyRows([
+    { portalKey: null, contractName: 'NFD 전자결재 건', reviewMethod: '전자결재'.normalize('NFD'), pm: '김분해' },
+    { portalKey: null, contractName: '괄호 변형 전자결재 건', reviewMethod: '전자결재(전결)', pm: '김괄호' },
+  ])
+  assert.equal(summary.created, 2)
+  assert.equal(summary.unrecognizedReviewMethod.length, 0, '전자결재의 흔한 변형은 미지정으로 빠지면 안 된다')
+  const recs = store.getProjects()
+  assert.ok(recs.every((r) => r.reviewMethod === '서면보고(본부장)'))
 })
 
 test('migrateLegacyRows: 계약번호가 없거나 매칭 안 되면 새 안건으로 생성하고 확정 필요 상태로 둔다', async () => {
@@ -220,6 +244,21 @@ test('migrateLegacyRows: 계약번호가 없거나 매칭 안 되면 새 안건�
   assert.equal(rec.pm, '박이관')
   assert.equal(rec.classificationConfirmed, false)
   assert.ok(rec.note.startsWith('[이관-미매칭, 수동확인 필요]'))
+})
+
+test('migrateLegacyRows: govKey가 있는 행은 국책사업 레코드로 생성된다', async () => {
+  const { store } = await freshStore()
+  store.seedProjects([])
+  const summary = store.migrateLegacyRows([
+    { portalKey: null, govKey: 'GOV-LEGACY-1', projectType: '국책사업', contractName: '옛 국책사업', pm: '박국책' },
+  ])
+  assert.equal(summary.created, 1)
+  const [rec] = store.getProjects()
+  assert.equal(rec.govKey, 'GOV-LEGACY-1')
+  assert.equal(rec.portalKey, null)
+  assert.equal(rec.projectType, '국책사업')
+  assert.equal(rec.businessDivision, '미래전장사업부문', '레거시로 이관되는 국책사업도 사업과 동일하게 미래전장사업부문이 기본값이어야 한다')
+  assert.equal(rec.businessType, '국책', '엑셀에 사업형태가 없는 국책사업은 기본으로 "국책"이 적용되어야 한다')
 })
 
 test('deleteProject는 완전 삭제이며 복원할 방법이 없다', async () => {
@@ -246,7 +285,7 @@ test('undoHistoryEntry reverts a field to its previous value', async () => {
   store.undoHistoryEntry(entry.id)
   assert.equal(store.getProject(rec.id).pm, null)
 })
-test('syncGovPortal: 새 govKey는 국책사업 레코드로 생성하고, 기본 심의방법은 서면보고(전자결재)다', async () => {
+test('syncGovPortal: 새 govKey는 국책사업 레코드로 생성하고, 기본 심의방법은 서면보고(본부장)이며 사업형태는 국책이다', async () => {
   const { store } = await freshStore()
   store.seedProjects([])
   const result = store.syncGovPortal([
@@ -260,7 +299,8 @@ test('syncGovPortal: 새 govKey는 국책사업 레코드로 생성하고, 기�
   assert.equal(rec.amount, 1250)
   assert.equal(rec.deptName, '부서', 'BM 부서')
   assert.equal(rec.bm, '김국책', 'BM 담당자')
-  assert.equal(rec.reviewMethod, '서면보고')
+  assert.equal(rec.reviewMethod, '서면보고(본부장)')
+  assert.equal(rec.businessType, '국책')
   assert.equal(rec.classificationConfirmed, true)
 })
 
