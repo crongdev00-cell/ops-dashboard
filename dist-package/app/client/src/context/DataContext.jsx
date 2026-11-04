@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react'
-import { computeStage, CFT_DEPT_FIELDS, STAGES } from '../lib/stage'
+import { computeStage, isCompletionView, CFT_DEPT_FIELDS, STAGES } from '../lib/stage'
 import { OUR_DIVISION, NOT_APPLICABLE } from '../lib/businessDivision'
 
 const DataContext = createContext(null)
@@ -61,13 +61,6 @@ async function api(path, options) {
   const data = await res.json().catch(() => ({}))
   if (!res.ok) throw new Error(data.error || `요청 실패: ${path}`)
   return data
-}
-
-// 개발심의회 안건 중 완료보고로 "넘어가는" 건 — 최종납기가 오늘보다 지났으면 개발심의회 쪽에서는
-// 빠지고 완료보고 쪽에만 보인다(배타적 이동, 사용자 확인). 저장된 값을 옮기는 게 아니라 조회 시점마다
-// 다시 계산하므로, 날짜가 바뀌면(혹은 되돌아가면) 소속도 매일 자동으로 다시 갈린다.
-function isOverdueIntoCompletion(record, todayIso) {
-  return (record.category ?? 'review') !== 'completion' && !!record.dueDate && record.dueDate < todayIso
 }
 
 export function DataProvider({ children, module = 'review' }) {
@@ -304,11 +297,8 @@ export function DataProvider({ children, module = 'review' }) {
   // 현재 모듈(개발심의회/완료보고)에 속하는 레코드만 — 이후 모든 필터링은 이 집합 위에서 그대로
   // 돌아간다(FilterBar/진행 단계 체크박스 등 기존 파이프라인을 완전히 재사용).
   const moduleRecords = useMemo(() => {
-    const todayIso = new Date().toISOString().slice(0, 10)
-    if (module === 'completion') {
-      return records.filter((r) => (r.category ?? 'review') === 'completion' || isOverdueIntoCompletion(r, todayIso))
-    }
-    return records.filter((r) => !isOverdueIntoCompletion(r, todayIso) && (r.category ?? 'review') !== 'completion')
+    if (module === 'completion') return records.filter(isCompletionView)
+    return records.filter((r) => !isCompletionView(r))
   }, [records, module])
 
   const activeRecords = useMemo(() => moduleRecords.filter((r) => !r.excluded), [moduleRecords])

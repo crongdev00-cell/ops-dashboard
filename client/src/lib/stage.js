@@ -65,12 +65,7 @@ const hasDate = (v) => !!v
 // 1:1 대응. D(검토완료)/NA(대상아님)/CANCEL(취소)은 이 템플릿에 없는 값이라 제외.
 export const COMPLETION_STAGE_OPTIONS = ['U', 'N', 'A', 'B', 'C', 'E', 'F']
 
-export function computeStage(record) {
-  // 완료보고 레코드는 CFT 8개 부서 날짜로 역산하지 않는다 — 완료보고 엑셀 자체가 CFT 검토 항목이
-  // 2개뿐(개발품질/원가분석)이라 우리 8개 부서 게이트와 안 맞는다. 업로드/수정 시 직접 지정한
-  // stageOverride를 그대로 쓴다.
-  if ((record.category ?? 'review') === 'completion') return STAGES[record.stageOverride] ?? STAGES.U
-
+function computeReviewStage(record) {
   const y = (record.reviewMethod ?? '').trim()
   if (y === '대상아님') return STAGES.NA
   if (y === '미실시') return STAGES.N
@@ -87,6 +82,35 @@ export function computeStage(record) {
   }
   // '미지정'이거나 빈 값, 또는 알 수 없는 값 — 아직 아무도 심의방법을 정하지 않은 상태.
   return STAGES.U
+}
+
+const todayIso = () => new Date().toISOString().slice(0, 10)
+const isPastDue = (record) => !!record.dueDate && record.dueDate < todayIso()
+
+// 완료보고 모듈에서 "이미 끝난 지 오래라 관리 불필요"로 치는 기준일 — 이 날짜 이전 납기는
+// 미실시/미지정 상태일 때 결재완료로 간주한다(사용자 요청).
+export const COMPLETION_UNMANAGED_CUTOFF = '2025-12-30'
+
+// 이 레코드를 "완료보고 쪽 로직"(stageOverride 기반, CFT 역산 안 함)으로 봐야 하는지 — 원래
+// completion 카테고리인 레코드뿐 아니라, 개발심의회 레코드 중 결재완료(F) 상태이면서 최종납기가
+// 지난 것도 포함한다(배타적 이동 규칙, DataContext의 모듈 분리와 공유하는 단일 판정).
+export function isCompletionView(record) {
+  if ((record.category ?? 'review') === 'completion') return true
+  return computeReviewStage(record).code === 'F' && isPastDue(record)
+}
+
+export function computeStage(record) {
+  if (!isCompletionView(record)) return computeReviewStage(record)
+  // 완료보고 레코드는 CFT 8개 부서 날짜로 역산하지 않는다 — 완료보고 엑셀 자체가 CFT 검토 항목이
+  // 2개뿐(개발품질/원가분석)이라 우리 8개 부서 게이트와 안 맞는다. 업로드/수정 시 직접 지정한
+  // stageOverride를 그대로 쓴다. 개발심의회에서 넘어온 레코드는 stageOverride가 없어서 미지정부터
+  // 완료보고 자체 절차를 새로 시작한다(요청 — 개발심의회 때의 결재완료 상태를 들고 오지 않음).
+  const base = STAGES[record.stageOverride] ?? STAGES.U
+  // 이미 끝난 지 오래된 건(미실시/미지정 + 기준일 이전 납기)은 더는 관리 안 해도 되니 결재완료로 간주.
+  if ((base.code === 'N' || base.code === 'U') && record.dueDate && record.dueDate < COMPLETION_UNMANAGED_CUTOFF) {
+    return STAGES.F
+  }
+  return base
 }
 
 const ORDER = ['A', 'B', 'C', 'D', 'E', 'F']

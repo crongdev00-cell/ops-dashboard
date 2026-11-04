@@ -5,7 +5,7 @@ import InlineText from '../common/InlineText'
 import VerticalStepper from '../common/VerticalStepper'
 import CommentsSection from '../common/CommentsSection'
 import MetaTags from '../common/MetaTags'
-import { REVIEW_METHODS, COMPLETION_STAGE_OPTIONS, STAGES } from '../../lib/stage'
+import { REVIEW_METHODS, COMPLETION_STAGE_OPTIONS, STAGES, isCompletionView } from '../../lib/stage'
 import { CLASSIFY_OPTIONS } from '../../lib/businessDivision'
 import { useData } from '../../context/DataContext'
 import { SORT_FIELDS, compareRecords, buildYearGroups } from '../../lib/recordSort'
@@ -186,7 +186,7 @@ export default function MasterDetailView() {
               }}
             />
           </Meta>
-          {(selected.category ?? 'review') !== 'completion' && (
+          {!isCompletionView(selected) && (
             <Meta icon={Layers} label="사업부문">
               <select
                 value={selected.businessDivision ?? ''}
@@ -201,7 +201,7 @@ export default function MasterDetailView() {
         </div>
 
         <h3 className="mb-4 text-sm font-semibold text-ink">진행 단계</h3>
-        {(selected.category ?? 'review') === 'completion' ? (
+        {isCompletionView(selected) ? (
           <select
             value={selected.stageOverride ?? 'U'}
             onChange={(e) => update({ stageOverride: e.target.value })}

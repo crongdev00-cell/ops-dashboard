@@ -4,7 +4,7 @@ import StatusBadge from './StatusBadge'
 import InlineText from './InlineText'
 import VerticalStepper from './VerticalStepper'
 import CommentsSection from './CommentsSection'
-import { REVIEW_METHODS, FACE_TO_FACE_SONCHUNGGEUM, COMPLETION_STAGE_OPTIONS, STAGES } from '../../lib/stage'
+import { REVIEW_METHODS, FACE_TO_FACE_SONCHUNGGEUM, COMPLETION_STAGE_OPTIONS, STAGES, isCompletionView } from '../../lib/stage'
 import { CLASSIFY_OPTIONS } from '../../lib/businessDivision'
 import { BUSINESS_TYPES } from '../../lib/businessType'
 import { PROJECT_STAGES } from '../../lib/projectStage'
@@ -16,7 +16,7 @@ export default function RecordModal({ record, onClose }) {
   const { updateRecord, deleteRecord, markSeen } = useData()
   const [actionError, setActionError] = useState(null)
   useEscapeKey(onClose)
-  const isCompletion = (record?.category ?? 'review') === 'completion'
+  const isCompletion = !!record && isCompletionView(record)
 
   useEffect(() => {
     if (record?.isNew) markSeen(record.id)
