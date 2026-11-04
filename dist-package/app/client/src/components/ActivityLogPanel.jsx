@@ -8,6 +8,8 @@ const DATE_FIELDS = new Set([
   'pmRequest', 'pmComplete', 'cftRequest',
   'cftAi', 'cftSwTest', 'cftPurchase', 'cftQuality', 'cftCostAnalysis', 'cftMns', 'cftSystemEng', 'cftBizMgmt',
   'notice', 'approval', 'reviewDate', 'contractDate', 'dueDate',
+  // 완료보고 전용 날짜 필드(stage.js 참고) — review 필드와 이름이 겹치지 않게 분리된 것들.
+  'compPmRequest', 'compPmDue', 'compPmComplete', 'compCftRequest', 'compCftQuality', 'compCftCostAnalysis', 'compNotice', 'compApproval',
 ])
 const FIELD_LABELS = {
   contractName: '계약(사업)명', deptName: 'BM 부서', bm: 'BM 이름', pm: 'PM', pmDeptName: 'PM 부서',
@@ -18,6 +20,10 @@ const FIELD_LABELS = {
   cftQuality: 'CFT 개발품질 검토일', cftCostAnalysis: 'CFT 원가분석 검토일', cftMns: 'CFT M&S 검토일',
   cftSystemEng: 'CFT 체계공학 검토일', cftBizMgmt: 'CFT 사업관리 검토일',
   notice: '안내일', approval: '결재완료일',
+  compPmRequest: 'PM 요청일', compPmDue: 'PM 작성 예정일', compPmComplete: 'PM 작성완료일',
+  compCftRequest: 'CFT 요청일', compCftQuality: 'CFT 개발품질 검토일', compCftCostAnalysis: 'CFT 원가분석 검토일',
+  compNotice: '안내일', compApproval: '결재완료일',
+  labName: '연구소명', projectStage: '사업단계',
 }
 
 function displayValue(field, v) {

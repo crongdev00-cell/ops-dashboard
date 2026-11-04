@@ -79,6 +79,31 @@ export const COMPLETION_STEP_SEQUENCE = [
   { key: 'compApproval', stage: 'F', label: '결재완료' },
 ]
 
+// STEP_SEQUENCE/COMPLETION_STEP_SEQUENCE를 "날짜 필드 하나당 한 줄"로 펼친다 — 일정(캘린더/
+// 타임라인) 뷰처럼 전체 날짜 필드 목록이 필요한 곳에서 review/completion 필드 목록을 손으로
+// 중복 작성하지 않고 재사용한다.
+function flattenDateKeys(sequence) {
+  return sequence.flatMap((step) => (step.keys ? step.keys : [{ key: step.key, label: step.label }]))
+}
+export const REVIEW_DATE_KEYS = flattenDateKeys(STEP_SEQUENCE)
+export const COMPLETION_DATE_KEYS = flattenDateKeys(COMPLETION_STEP_SEQUENCE)
+
+// 칸반 카드 배지/정렬/엑셀 내보내기처럼 "PM요청"/"결재완료" 같은 단일 논리적 날짜 하나만 필요한
+// 곳에서 쓴다 — 완료보고 레코드는 review 필드가 아니라 comp* 필드를 봐야 한다.
+const LOGICAL_DATE_FIELD = {
+  pmRequest: { review: 'pmRequest', completion: 'compPmRequest' },
+  pmComplete: { review: 'pmComplete', completion: 'compPmComplete' },
+  cftRequest: { review: 'cftRequest', completion: 'compCftRequest' },
+  cftQuality: { review: 'cftQuality', completion: 'compCftQuality' },
+  cftCostAnalysis: { review: 'cftCostAnalysis', completion: 'compCftCostAnalysis' },
+  notice: { review: 'notice', completion: 'compNotice' },
+  approval: { review: 'approval', completion: 'compApproval' },
+}
+export function logicalDate(record, step) {
+  const map = LOGICAL_DATE_FIELD[step]
+  return record[isCompletionView(record) ? map.completion : map.review] ?? null
+}
+
 function computeReviewStage(record) {
   const y = (record.reviewMethod ?? '').trim()
   if (y === '대상아님') return STAGES.NA

@@ -1,20 +1,16 @@
 import { useState } from 'react'
 import { AlertTriangle, Building2, User } from 'lucide-react'
-import { STAGES, computeStage } from '../../lib/stage'
+import { STAGES, computeStage, isCompletionView, logicalDate, REVIEW_DATE_KEYS, COMPLETION_DATE_KEYS } from '../../lib/stage'
 import { useData, needsClassification } from '../../context/DataContext'
 import StatusBadge from '../common/StatusBadge'
 import InlineText from '../common/InlineText'
 import RecordModal from '../common/RecordModal'
 import MetaTags from '../common/MetaTags'
 
-const STEP_KEYS = [
-  'pmRequest', 'pmComplete', 'cftRequest',
-  'cftAi', 'cftSwTest', 'cftPurchase', 'cftQuality', 'cftCostAnalysis', 'cftMns', 'cftSystemEng', 'cftBizMgmt',
-  'notice', 'approval',
-]
-
+// 완료보고 레코드는 review 필드(pmRequest 등)가 아니라 comp* 필드를 쓴다(stage.js 참고).
 function lastTouched(r) {
-  const dates = STEP_KEYS.map((k) => r[k]).filter(Boolean)
+  const keys = isCompletionView(r) ? COMPLETION_DATE_KEYS : REVIEW_DATE_KEYS
+  const dates = keys.map(({ key }) => r[key]).filter(Boolean)
   return dates.length ? dates.sort().at(-1) : null
 }
 
@@ -37,7 +33,8 @@ export default function ExecutiveDashboardView() {
   // 전체 안건(연도별): PM요청 시점(pmRequest) 연도로 묶어서 심의완료(F)/미실시(N) 건수만 집계.
   // PM요청 자체가 아직 안 된 건은 연도를 알 수 없으니 "연도미정"으로 따로 모은다.
   const yearGroups = activeRecords.reduce((acc, r) => {
-    const year = r.pmRequest ? new Date(r.pmRequest).getFullYear() : '연도미정'
+    const pmRequest = logicalDate(r, 'pmRequest')
+    const year = pmRequest ? new Date(pmRequest).getFullYear() : '연도미정'
     if (!acc[year]) acc[year] = { year, done: 0, notStarted: 0, total: 0 }
     acc[year].total += 1
     const code = computeStage(r).code

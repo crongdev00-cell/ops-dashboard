@@ -4,7 +4,7 @@ import StatusBadge from '../common/StatusBadge'
 import { formatDate } from '../../lib/format'
 import BulkToolbar from '../common/BulkToolbar'
 import RecordModal from '../common/RecordModal'
-import { stageProgressPct, computeStage } from '../../lib/stage'
+import { stageProgressPct, computeStage, logicalDate } from '../../lib/stage'
 import { useData } from '../../context/DataContext'
 import { exportRecordsToExcel } from '../../lib/exportExcel'
 import { compareRecords, buildYearGroups } from '../../lib/recordSort'
@@ -109,8 +109,8 @@ export default function AirtableGridView() {
         {visibleCols.has('amount') && <td className="px-4 py-2 text-right text-slate tabular-nums">{r.amount != null ? Number(r.amount).toLocaleString('ko-KR') : '-'}</td>}
         {visibleCols.has('contractDate') && <td className="px-4 py-2 text-slate">{formatDate(r.contractDate)}</td>}
         {visibleCols.has('dueDate') && <td className="px-4 py-2 text-slate">{formatDate(r.dueDate)}</td>}
-        {visibleCols.has('pmRequest') && <td className="px-4 py-2 text-slate">{formatDate(r.pmRequest)}</td>}
-        {visibleCols.has('approval') && <td className="px-4 py-2 text-slate">{formatDate(r.approval)}</td>}
+        {visibleCols.has('pmRequest') && <td className="px-4 py-2 text-slate">{formatDate(logicalDate(r, 'pmRequest'))}</td>}
+        {visibleCols.has('approval') && <td className="px-4 py-2 text-slate">{formatDate(logicalDate(r, 'approval'))}</td>}
       </tr>
     )
   }

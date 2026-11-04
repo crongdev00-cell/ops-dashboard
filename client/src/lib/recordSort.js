@@ -1,6 +1,6 @@
 // 표 보기 / 목록·상세보기 둘 다에서 쓰는 정렬·연도별 묶음 로직 — 각 뷰에 따로 두면
 // "계약일자는 정렬되는데 다른 컬럼은 안 된다" 같은 드리프트가 또 생긴다(사용자 리포트).
-import { computeStage, stageProgressPct } from './stage.js'
+import { computeStage, stageProgressPct, logicalDate } from './stage.js'
 
 export const SORT_FIELDS = [
   { key: 'contractName', label: '계약(사업)명', type: 'text' },
@@ -23,6 +23,8 @@ const TYPE_OF = Object.fromEntries(SORT_FIELDS.map((f) => [f.key, f.type]))
 function valueOf(record, key) {
   if (key === 'stage') return computeStage(record).label
   if (key === 'progress') return stageProgressPct(record)
+  // 완료보고 레코드는 PM요청/결재완료가 review 필드가 아니라 comp* 필드에 들어있다(stage.js 참고).
+  if (key === 'pmRequest' || key === 'approval') return logicalDate(record, key) ?? ''
   return record[key] ?? ''
 }
 

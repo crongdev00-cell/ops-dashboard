@@ -1,28 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import { ChevronLeft, ChevronRight, CalendarDays, GanttChartSquare, Building2, ListChecks, Sparkles } from 'lucide-react'
 import { useData } from '../../context/DataContext'
-import { computeStage } from '../../lib/stage'
+import { computeStage, REVIEW_DATE_KEYS, COMPLETION_DATE_KEYS } from '../../lib/stage'
 import { formatDate } from '../../lib/format'
 import DateField from '../common/DateField'
 import StatusBadge from '../common/StatusBadge'
 import RecordModal from '../common/RecordModal'
 import MetaTags from '../common/MetaTags'
 
-const DATE_KEYS = [
-  { key: 'pmRequest', label: 'PM요청' },
-  { key: 'pmComplete', label: 'PM완료' },
-  { key: 'cftRequest', label: 'CFT요청' },
-  { key: 'cftAi', label: 'CFT-AI' },
-  { key: 'cftSwTest', label: 'CFT-S/W시험' },
-  { key: 'cftPurchase', label: 'CFT-개발구매' },
-  { key: 'cftQuality', label: 'CFT-개발품질' },
-  { key: 'cftCostAnalysis', label: 'CFT-원가분석' },
-  { key: 'cftMns', label: 'CFT-M&S' },
-  { key: 'cftSystemEng', label: 'CFT-체계공학' },
-  { key: 'cftBizMgmt', label: 'CFT-사업관리' },
-  { key: 'notice', label: '안내' },
-  { key: 'approval', label: '결재완료' },
-]
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토']
 
 export default function ScheduleView() {
@@ -58,7 +43,12 @@ function ModeButton({ active, icon: Icon, label, onClick }) {
 const LIST_CAP = 200
 
 function TimelineMode() {
-  const { visibleRecords: records, selectedId, setSelectedId, updateRecord, markSeen } = useData()
+  const { visibleRecords: records, selectedId, setSelectedId, updateRecord, markSeen, module } = useData()
+  // 완료보고는 review 필드(pmRequest 등)가 아니라 comp* 필드를 쓴다(stage.js 참고) — 모듈 전체가
+  // 한쪽 종류의 레코드만 보여주므로(moduleRecords), 모듈 하나로 날짜 목록을 고르면 된다.
+  const DATE_KEYS = module === 'completion' ? COMPLETION_DATE_KEYS : REVIEW_DATE_KEYS
+  const firstKey = DATE_KEYS[0].key
+  const lastKey = DATE_KEYS[DATE_KEYS.length - 1].key
   const withDates = records.filter((r) => DATE_KEYS.some(({ key }) => r[key]))
   const cappedList = records.slice(0, LIST_CAP)
   const cappedTimeline = withDates.slice(0, LIST_CAP)
@@ -131,9 +121,9 @@ function TimelineMode() {
                 </div>
                 <div className="ml-[188px] mt-1 flex items-center gap-3 text-xs">
                   <span className="text-slate">시작</span>
-                  <DateField value={r.pmRequest} onChange={(v) => updateRecord(r.id, { pmRequest: v })} />
+                  <DateField value={r[firstKey]} onChange={(v) => updateRecord(r.id, { [firstKey]: v })} />
                   <span className="text-slate">완료</span>
-                  <DateField value={r.approval} onChange={(v) => updateRecord(r.id, { approval: v })} />
+                  <DateField value={r[lastKey]} onChange={(v) => updateRecord(r.id, { [lastKey]: v })} />
                 </div>
               </div>
             )
@@ -145,11 +135,12 @@ function TimelineMode() {
 }
 
 function CalendarMode() {
-  const { records: allRecords, visibleRecords: records } = useData()
+  const { records: allRecords, visibleRecords: records, module } = useData()
   const [openId, setOpenId] = useState(null)
   // 신규 필터로 걸러진 records로 찾으면, 모달이 열려 "확인함" 처리되는 순간 그 목록에서
   // 빠져서 모달이 뜨자마자 닫혀버린다 — 전체 목록(allRecords)에서 찾아야 한다.
   const openRecord = allRecords.find((r) => r.id === openId)
+  const DATE_KEYS = module === 'completion' ? COMPLETION_DATE_KEYS : REVIEW_DATE_KEYS
 
   const eventsByDay = useMemo(() => {
     const map = new Map()
@@ -162,7 +153,7 @@ function CalendarMode() {
       }
     }
     return map
-  }, [records])
+  }, [records, DATE_KEYS])
 
   const earliest = useMemo(() => {
     const all = [...eventsByDay.keys()].sort()

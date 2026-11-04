@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { User, CalendarDays, LayoutGrid, Rows3, AlertTriangle, Layers, Grid3x3, Sparkles } from 'lucide-react'
-import { STAGES, STAGE_GROUPS, computeStage, stageProgressPct } from '../../lib/stage'
+import { STAGES, STAGE_GROUPS, computeStage, stageProgressPct, logicalDate } from '../../lib/stage'
 import { formatDate, daysBetween, todayIso } from '../../lib/format'
 import { useData } from '../../context/DataContext'
 import RecordModal from '../common/RecordModal'
@@ -104,7 +104,7 @@ function HorizontalBoard({ columns, onOpen, showSubStage }) {
                 </div>
                 <div className="mt-2.5 flex items-center gap-2 text-[11px] text-slate">
                   <span className="inline-flex items-center gap-1 rounded-md bg-paper px-1.5 py-0.5"><User size={11} /> {r.pm || '미지정'}</span>
-                  <span className="inline-flex items-center gap-1 rounded-md bg-paper px-1.5 py-0.5"><CalendarDays size={11} /> {formatDate(r.pmRequest)}</span>
+                  <span className="inline-flex items-center gap-1 rounded-md bg-paper px-1.5 py-0.5"><CalendarDays size={11} /> {formatDate(logicalDate(r, 'pmRequest'))}</span>
                 </div>
               </button>
             ))}

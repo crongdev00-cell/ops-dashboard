@@ -1,5 +1,5 @@
 import * as XLSX from 'xlsx'
-import { computeStage } from './stage.js'
+import { computeStage, logicalDate } from './stage.js'
 
 const HEADERS = {
   no: 'No.', contractName: '계약(사업)명', businessDivision: '사업부문', deptName: 'BM 부서', bm: 'BM 이름',
@@ -25,19 +25,22 @@ export function exportRecordsToExcel(records, filename = '개발심의회_현황
     [HEADERS.dueDate]: r.dueDate,
     [HEADERS.reviewMethod]: r.reviewMethod,
     [HEADERS.stage]: computeStage(r).label,
-    [HEADERS.pmRequest]: r.pmRequest,
-    [HEADERS.pmComplete]: r.pmComplete,
-    [HEADERS.cftRequest]: r.cftRequest,
+    // 완료보고 레코드는 이 날짜들이 review 필드가 아니라 comp* 필드에 들어있다(stage.js 참고) —
+    // logicalDate가 레코드 종류에 맞는 필드를 골라 읽는다. CFT 8부서 중 완료보고에 없는 6개는
+    // 완료보고 레코드에서 항상 비어있는 게 맞다(해당 개념 자체가 없음).
+    [HEADERS.pmRequest]: logicalDate(r, 'pmRequest'),
+    [HEADERS.pmComplete]: logicalDate(r, 'pmComplete'),
+    [HEADERS.cftRequest]: logicalDate(r, 'cftRequest'),
     [HEADERS.cftAi]: r.cftAi,
     [HEADERS.cftSwTest]: r.cftSwTest,
     [HEADERS.cftPurchase]: r.cftPurchase,
-    [HEADERS.cftQuality]: r.cftQuality,
-    [HEADERS.cftCostAnalysis]: r.cftCostAnalysis,
+    [HEADERS.cftQuality]: logicalDate(r, 'cftQuality'),
+    [HEADERS.cftCostAnalysis]: logicalDate(r, 'cftCostAnalysis'),
     [HEADERS.cftMns]: r.cftMns,
     [HEADERS.cftSystemEng]: r.cftSystemEng,
     [HEADERS.cftBizMgmt]: r.cftBizMgmt,
-    [HEADERS.notice]: r.notice,
-    [HEADERS.approval]: r.approval,
+    [HEADERS.notice]: logicalDate(r, 'notice'),
+    [HEADERS.approval]: logicalDate(r, 'approval'),
     [HEADERS.note]: r.note,
     [HEADERS.excluded]: r.excluded ? 'Y' : 'N',
   }))
