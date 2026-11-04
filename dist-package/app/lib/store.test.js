@@ -319,16 +319,16 @@ test('syncGovPortal: 기존 govKey는 GOV_FIELDS만 갱신하고 팀 입력 필�
   assert.equal(updated.pm, '김팀장', 'pm은 팀 입력 필드라 재동기화로 유지되어야 한다')
 })
 
-test('importCompletionReport: 완료보고 레코드는 category가 completion이고 stageOverride를 그대로 저장한다', async () => {
+test('importCompletionReport: 완료보고 레코드는 category가 completion이고 comp* 날짜 필드를 그대로 저장한다', async () => {
   const { store } = await freshStore()
   store.seedProjects([])
   const result = store.importCompletionReport([
-    { contractName: '완료보고 안건A', reviewMethod: '전자결재', stageOverride: 'A', amount: 1000, pm: '김피엠' },
+    { contractName: '완료보고 안건A', reviewMethod: '전자결재', compPmRequest: '2026-01-01', amount: 1000, pm: '김피엠' },
   ])
   assert.equal(result.created, 1)
   const [rec] = store.getProjects()
   assert.equal(rec.category, 'completion')
-  assert.equal(rec.stageOverride, 'A')
+  assert.equal(rec.compPmRequest, '2026-01-01')
   assert.equal(rec.reviewMethod, '서면보고(본부장)', '전자결재는 서면보고(본부장)으로 정규화되어야 한다')
   assert.equal(rec.classificationConfirmed, true, '완료보고는 1차 분류 대상이 아니다')
   assert.equal(rec.pm, '김피엠')
@@ -337,7 +337,7 @@ test('importCompletionReport: 완료보고 레코드는 category가 completion�
 test('importCompletionReport: 재업로드해도 매칭 없이 매번 신규 생성한다', async () => {
   const { store } = await freshStore()
   store.seedProjects([])
-  store.importCompletionReport([{ contractName: '같은 이름', stageOverride: 'F' }])
-  store.importCompletionReport([{ contractName: '같은 이름', stageOverride: 'F' }])
+  store.importCompletionReport([{ contractName: '같은 이름', compApproval: '2026-01-01' }])
+  store.importCompletionReport([{ contractName: '같은 이름', compApproval: '2026-01-01' }])
   assert.equal(store.getProjects().length, 2, '고유 키가 없으므로 업서트하지 않고 둘 다 생성되어야 한다')
 })

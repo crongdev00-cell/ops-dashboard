@@ -301,14 +301,17 @@ export function createDummyData() {
     }),
 
     // ── 완료보고(category: 'completion') 2건 — original_complete_report_data_template.xlsx 업로드로
-    // 생성되는 레코드 모양을 흉내낸다. computeStage()가 CFT 날짜 역산이 아니라 stageOverride를
-    // 직접 쓰는 걸 데모에서도 확인할 수 있게 둠.
+    // 생성되는 레코드 모양을 흉내낸다. computeStage()가 개발심의회와 같은 방식으로 comp* 날짜 필드를
+    // 역산하는 걸 데모에서도 확인할 수 있게 둠(개발품질/원가분석 2부서 게이트).
     rec({
       category: 'completion', contractName: '차기군단 지상통제 시제', contractOrg: '국방ㅁㅁ연구소',
       contractMethod: '일반개산계약', businessType: '연구개발(무기체계)', projectStage: '체계개발',
       labName: '위성연구소', pm: '아무개', deptName: '우주사업부', bm: '김길동',
       amount: 14921, contractDate: daysAgo(900), dueDate: daysAgo(10),
-      reviewMethod: '서면보고(본부장)', stageOverride: 'F',
+      reviewMethod: '서면보고(본부장)',
+      compPmRequest: daysAgo(60), compPmDue: daysAgo(46), compPmComplete: daysAgo(50),
+      compCftRequest: daysAgo(40), compCftQuality: daysAgo(30), compCftCostAnalysis: daysAgo(30),
+      compNotice: daysAgo(20), compApproval: daysAgo(10),
       businessDivision: null, autoClassification: null, classificationReason: null, classificationConfirmed: true, isSonchunggeum: false,
       note: '완료보고 업로드 예시 — 이미 결재완료까지 끝난 건',
     }),
@@ -317,9 +320,10 @@ export function createDummyData() {
       contractMethod: '단계정산', businessType: '연구개발(핵심기술)', projectStage: '응용연구',
       labName: '해양연구소', pm: '박완료', deptName: '해양사업부', bm: '이보고',
       amount: 5400, contractDate: daysAgo(500), dueDate: daysAgo(3),
-      reviewMethod: '서면보고(본부장)', stageOverride: 'C',
+      reviewMethod: '서면보고(본부장)',
+      compPmRequest: daysAgo(30), compPmDue: daysAgo(16), compPmComplete: daysAgo(20), compCftRequest: daysAgo(10),
       businessDivision: null, autoClassification: null, classificationReason: null, classificationConfirmed: true, isSonchunggeum: false,
-      note: '완료보고 업로드 예시 — 아직 CFT검토중, 2025-12-29 이후 납기라 미실시로 강제되지 않음',
+      note: '완료보고 업로드 예시 — CFT 요청까지만 진행, 2025-12-29 이후 납기라 자동완료 되지 않음',
     }),
   ]
 }

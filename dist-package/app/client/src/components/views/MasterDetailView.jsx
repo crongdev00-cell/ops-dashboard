@@ -5,7 +5,7 @@ import InlineText from '../common/InlineText'
 import VerticalStepper from '../common/VerticalStepper'
 import CommentsSection from '../common/CommentsSection'
 import MetaTags from '../common/MetaTags'
-import { REVIEW_METHODS, COMPLETION_STAGE_OPTIONS, STAGES, isCompletionView } from '../../lib/stage'
+import { REVIEW_METHODS, STEP_SEQUENCE, COMPLETION_STEP_SEQUENCE, isCompletionView } from '../../lib/stage'
 import { CLASSIFY_OPTIONS } from '../../lib/businessDivision'
 import { useData } from '../../context/DataContext'
 import { SORT_FIELDS, compareRecords, buildYearGroups } from '../../lib/recordSort'
@@ -201,17 +201,12 @@ export default function MasterDetailView() {
         </div>
 
         <h3 className="mb-4 text-sm font-semibold text-ink">진행 단계</h3>
-        {isCompletionView(selected) ? (
-          <select
-            value={selected.stageOverride ?? 'U'}
-            onChange={(e) => update({ stageOverride: e.target.value })}
-            className="w-full rounded-md border border-line bg-white px-2 py-1.5 text-sm outline-none focus:border-indigo"
-          >
-            {COMPLETION_STAGE_OPTIONS.map((code) => <option key={code} value={code}>{STAGES[code].label}</option>)}
-          </select>
-        ) : (
-          <VerticalStepper record={selected} onUpdate={update} />
-        )}
+        <VerticalStepper
+          record={selected}
+          onUpdate={update}
+          stepSequence={isCompletionView(selected) ? COMPLETION_STEP_SEQUENCE : STEP_SEQUENCE}
+          mode={isCompletionView(selected) ? 'completion' : 'review'}
+        />
 
         <div className="mt-6">
           <p className="mb-1.5 text-xs font-medium text-slate">비고</p>

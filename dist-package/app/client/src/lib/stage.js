@@ -60,10 +60,24 @@ export const STAGE_GROUPS = [
 
 const hasDate = (v) => !!v
 
-// 완료보고(category:'completion') 레코드의 "진행 단계" select에서 고를 수 있는 코드 —
-// 완료보고 엑셀 템플릿의 진행 단계 값셋(PM작성중/작성완료/CFT검토중/안내완료/결재완료/미실시)과
-// 1:1 대응. D(검토완료)/NA(대상아님)/CANCEL(취소)은 이 템플릿에 없는 값이라 제외.
-export const COMPLETION_STAGE_OPTIONS = ['U', 'N', 'A', 'B', 'C', 'E', 'F']
+// 완료보고 전용 [유관부서(CFT)] 검토 항목 — 개발심의회(8부서)와 달리 개발품질/원가분석 2개뿐.
+// 필드 이름도 review의 CFT_DEPT_FIELDS(cftQuality/cftCostAnalysis)와 겹치지 않게 comp 접두사를
+// 쓴다 — 개발심의회에서 완료보고로 "넘어온" 레코드는 category가 여전히 'review'라 그 필드들에
+// 이미 개발심의회 때 날짜가 들어있는데, 이름이 겹치면 넘어오자마자 그 날짜로 역산되어 바로
+// 결재완료로 보여버리는 버그가 된다(실제 겪은 버그).
+export const COMPLETION_CFT_DEPT_FIELDS = [
+  { key: 'compCftQuality', label: '개발 품질' },
+  { key: 'compCftCostAnalysis', label: '원가 분석' },
+]
+
+export const COMPLETION_STEP_SEQUENCE = [
+  { key: 'compPmRequest', stage: 'A', label: 'PM 요청' },
+  { key: 'compPmComplete', stage: 'B', label: 'PM 작성완료' },
+  { key: 'compCftRequest', stage: 'C', label: 'CFT 검토 요청' },
+  { key: 'compCftDepts', stage: 'D', label: '[유관부서(CFT)] 부서별 검토', keys: COMPLETION_CFT_DEPT_FIELDS },
+  { key: 'compNotice', stage: 'E', label: '안내' },
+  { key: 'compApproval', stage: 'F', label: '결재완료' },
+]
 
 function computeReviewStage(record) {
   const y = (record.reviewMethod ?? '').trim()
@@ -91,7 +105,7 @@ const isPastDue = (record) => !!record.dueDate && record.dueDate < todayIso()
 // 미실시/미지정 상태일 때 결재완료로 간주한다(사용자 요청).
 export const COMPLETION_UNMANAGED_CUTOFF = '2025-12-30'
 
-// 이 레코드를 "완료보고 쪽 로직"(stageOverride 기반, CFT 역산 안 함)으로 봐야 하는지 — 원래
+// 이 레코드를 "완료보고 쪽 로직"(comp* 날짜 필드로 역산, 2부서 CFT 게이트)으로 봐야 하는지 — 원래
 // completion 카테고리인 레코드뿐 아니라, 개발심의회 레코드 중 결재완료(F) 상태이면서 최종납기가
 // 지난 것도 포함한다(배타적 이동 규칙, DataContext의 모듈 분리와 공유하는 단일 판정).
 export function isCompletionView(record) {
@@ -99,13 +113,28 @@ export function isCompletionView(record) {
   return computeReviewStage(record).code === 'F' && isPastDue(record)
 }
 
+// 완료보고는 개발심의회와 똑같이 날짜 필드로 역산한다 — 다만 CFT 게이트가 2개 부서(개발품질/
+// 원가분석)뿐이고, comp* 전용 필드를 본다(위 주석 참고). 개발심의회처럼 "심의방법이 서면보고/
+// 대면보고로 지정돼야만 날짜를 본다"는 조건은 일부러 걸지 않는다 — 완료보고 엑셀의 심의방법 열이
+// 항상 신뢰성 있게 채워진다는 보장이 없어서, PM요청 날짜가 있는데도 심의방법이 비어 있다는 이유로
+// "미지정"으로 묶이는 걸 피하기 위함.
+function computeCompletionDerivedStage(record) {
+  const y = (record.reviewMethod ?? '').trim()
+  if (y === '대상아님') return STAGES.NA
+  if (y === '미실시') return STAGES.N
+  if (y === '취소') return STAGES.CANCEL
+  if (!hasDate(record.compPmRequest)) return STAGES.U
+  if (!hasDate(record.compPmComplete)) return STAGES.A
+  if (!hasDate(record.compCftRequest)) return STAGES.B
+  if (!COMPLETION_CFT_DEPT_FIELDS.every((f) => hasDate(record[f.key]))) return STAGES.C
+  if (!hasDate(record.compNotice)) return STAGES.D
+  if (!hasDate(record.compApproval)) return STAGES.E
+  return STAGES.F
+}
+
 export function computeStage(record) {
   if (!isCompletionView(record)) return computeReviewStage(record)
-  // 완료보고 레코드는 CFT 8개 부서 날짜로 역산하지 않는다 — 완료보고 엑셀 자체가 CFT 검토 항목이
-  // 2개뿐(개발품질/원가분석)이라 우리 8개 부서 게이트와 안 맞는다. 업로드/수정 시 직접 지정한
-  // stageOverride를 그대로 쓴다. 개발심의회에서 넘어온 레코드는 stageOverride가 없어서 미지정부터
-  // 완료보고 자체 절차를 새로 시작한다(요청 — 개발심의회 때의 결재완료 상태를 들고 오지 않음).
-  const base = STAGES[record.stageOverride] ?? STAGES.U
+  const base = computeCompletionDerivedStage(record)
   // 이미 끝난 지 오래된 건(미실시/미지정 + 기준일 이전 납기)은 더는 관리 안 해도 되니 결재완료로 간주.
   if ((base.code === 'N' || base.code === 'U') && record.dueDate && record.dueDate < COMPLETION_UNMANAGED_CUTOFF) {
     return STAGES.F

@@ -3,7 +3,6 @@ import { X } from 'lucide-react'
 import { BUSINESS_DIVISIONS, OUR_DIVISION } from '../lib/businessDivision'
 import { BUSINESS_TYPES } from '../lib/businessType'
 import { PROJECT_STAGES } from '../lib/projectStage'
-import { COMPLETION_STAGE_OPTIONS, STAGES } from '../lib/stage'
 import { useData } from '../context/DataContext'
 import { useEscapeKey } from '../lib/useEscapeKey'
 
@@ -23,7 +22,6 @@ export default function AddRecordModal({ onClose, onCreated }) {
   const [amount, setAmount] = useState('')
   const [govStage, setGovStage] = useState('')
   const [projectStage, setProjectStage] = useState('')
-  const [stageOverride, setStageOverride] = useState('U')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
   useEscapeKey(onClose)
@@ -46,7 +44,7 @@ export default function AddRecordModal({ onClose, onCreated }) {
         amount: amount.trim() === '' ? null : Number(amount),
         category: module,
         ...(isCompletion
-          ? { projectStage: projectStage || null, stageOverride }
+          ? { projectStage: projectStage || null }
           : { govStage: govStage || null }),
       })
       onClose()
@@ -99,19 +97,12 @@ export default function AddRecordModal({ onClose, onCreated }) {
             <input value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="예: 30000" className="w-full rounded-md border border-line bg-paper px-2.5 py-1.5 text-sm outline-none focus:border-indigo" />
           </Field>
           {isCompletion ? (
-            <>
-              <Field label="사업단계">
-                <select value={projectStage} onChange={(e) => setProjectStage(e.target.value)} className="w-full rounded-md border border-line bg-paper px-2.5 py-1.5 text-sm outline-none focus:border-indigo">
-                  <option value="">미지정</option>
-                  {PROJECT_STAGES.map((s) => <option key={s} value={s}>{s}</option>)}
-                </select>
-              </Field>
-              <Field label="진행 단계">
-                <select value={stageOverride} onChange={(e) => setStageOverride(e.target.value)} className="w-full rounded-md border border-line bg-paper px-2.5 py-1.5 text-sm outline-none focus:border-indigo">
-                  {COMPLETION_STAGE_OPTIONS.map((code) => <option key={code} value={code}>{STAGES[code].label}</option>)}
-                </select>
-              </Field>
-            </>
+            <Field label="사업단계">
+              <select value={projectStage} onChange={(e) => setProjectStage(e.target.value)} className="w-full rounded-md border border-line bg-paper px-2.5 py-1.5 text-sm outline-none focus:border-indigo">
+                <option value="">미지정</option>
+                {PROJECT_STAGES.map((s) => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </Field>
           ) : (
             <Field label="사업단계">
               <select value={govStage} onChange={(e) => setGovStage(e.target.value)} className="w-full rounded-md border border-line bg-paper px-2.5 py-1.5 text-sm outline-none focus:border-indigo">

@@ -2,7 +2,7 @@ import { Check } from 'lucide-react'
 import { STEP_SEQUENCE, computeStage } from '../../lib/stage'
 import DateField from './DateField'
 
-export default function VerticalStepper({ record, onUpdate }) {
+export default function VerticalStepper({ record, onUpdate, stepSequence = STEP_SEQUENCE, mode = 'review' }) {
   const stage = computeStage(record)
   const order = ['A', 'B', 'C', 'D', 'E', 'F']
   const activeIdx = order.indexOf(stage.code)
@@ -10,7 +10,9 @@ export default function VerticalStepper({ record, onUpdate }) {
   if (stage.code === 'U') {
     return (
       <div className="rounded-xl border border-line bg-paper px-4 py-6 text-center text-sm text-slate">
-        심의방법 미지정 — 서면보고/대면보고/미실시/대상아님 중 하나로 지정하면 진행 단계가 표시됩니다.
+        {mode === 'completion'
+          ? 'PM요청 날짜가 아직 입력되지 않았습니다 — 날짜를 입력하면 진행 단계가 표시됩니다.'
+          : '심의방법 미지정 — 서면보고/대면보고/미실시/대상아님 중 하나로 지정하면 진행 단계가 표시됩니다.'}
       </div>
     )
   }
@@ -18,7 +20,9 @@ export default function VerticalStepper({ record, onUpdate }) {
   if (stage.code === 'N') {
     return (
       <div className="rounded-xl border border-line bg-paper px-4 py-6 text-center text-sm text-slate">
-        심의 미실시 — 심의방법을 서면보고/대면보고로 변경하면 진행 단계가 표시됩니다.
+        {mode === 'completion'
+          ? '심의 미실시 — 심의방법을 변경하면 진행 단계가 표시됩니다.'
+          : '심의 미실시 — 심의방법을 서면보고/대면보고로 변경하면 진행 단계가 표시됩니다.'}
       </div>
     )
   }
@@ -33,12 +37,12 @@ export default function VerticalStepper({ record, onUpdate }) {
 
   return (
     <ol className="relative">
-      {STEP_SEQUENCE.map((step, i) => {
+      {stepSequence.map((step, i) => {
         const done = i < activeIdx || stage.code === 'F'
         const current = i === activeIdx && stage.code !== 'F'
         return (
           <li key={step.key} className="relative flex gap-3 pb-7 last:pb-0">
-            {i < STEP_SEQUENCE.length - 1 && (
+            {i < stepSequence.length - 1 && (
               <span
                 className="absolute left-[11px] top-6 w-px"
                 style={{ height: 'calc(100% - 1.2rem)', background: done ? 'var(--color-indigo)' : 'var(--color-line)' }}

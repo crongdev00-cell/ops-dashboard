@@ -36,13 +36,34 @@ test('레거시 "취소" 심의방법은 취소 단계로 분류된다', () => {
   assert.equal(computeStage({ reviewMethod: '취소' }).code, 'CANCEL')
 })
 
-test('완료보고(category:completion) 레코드는 stageOverride를 그대로 쓰고, CFT 날짜 역산을 하지 않는다', () => {
-  const record = { category: 'completion', stageOverride: 'C', reviewMethod: '미지정' }
-  assert.equal(computeStage(record).code, 'C')
+test('완료보고(category:completion) 레코드는 comp* 날짜 필드로 역산한다(PM요청만 채우면 PM작성중)', () => {
+  const record = { category: 'completion', compPmRequest: '2026-01-01' }
+  assert.equal(computeStage(record).code, 'A')
 })
 
-test('완료보고 레코드에 stageOverride가 없으면 미지정으로 떨어진다', () => {
+test('완료보고는 개발심의회와 달리 심의방법이 비어 있어도 날짜만 있으면 역산한다(실데이터에서 심의방법 열이 항상 채워진다는 보장이 없음)', () => {
+  const record = { category: 'completion', reviewMethod: '', compPmRequest: '2026-01-01', compPmComplete: '2026-01-02' }
+  assert.equal(computeStage(record).code, 'B')
+})
+
+test('완료보고는 CFT 8부서가 아니라 2부서(개발품질/원가분석)만 채워지면 검토완료로 넘어간다', () => {
+  const record = {
+    category: 'completion', compPmRequest: '2026-01-01', compPmComplete: '2026-01-02', compCftRequest: '2026-01-03',
+    compCftQuality: '2026-01-10',
+  }
+  assert.equal(computeStage(record).code, 'C', '원가분석이 비어있으면 아직 CFT검토중')
+  record.compCftCostAnalysis = '2026-01-11'
+  assert.equal(computeStage(record).code, 'D', '2부서가 다 채워지면 검토완료')
+})
+
+test('완료보고 레코드에 아무 comp* 날짜도 없으면 미지정으로 떨어진다', () => {
   assert.equal(computeStage({ category: 'completion' }).code, 'U')
+})
+
+test('완료보고에서도 심의방법이 미실시/대상아님/취소면 날짜와 무관하게 그 상태를 우선한다', () => {
+  assert.equal(computeStage({ category: 'completion', reviewMethod: '미실시', compPmRequest: '2026-01-01' }).code, 'N')
+  assert.equal(computeStage({ category: 'completion', reviewMethod: '대상아님' }).code, 'NA')
+  assert.equal(computeStage({ category: 'completion', reviewMethod: '취소' }).code, 'CANCEL')
 })
 
 test('개발심의회 레코드가 CFT검토중(C)이고 납기가 지났어도 완료보고로 넘어가지 않는다(결재완료만 이동)', () => {
@@ -52,24 +73,37 @@ test('개발심의회 레코드가 CFT검토중(C)이고 납기가 지났어도 
   assert.equal(isCompletionView(record), false)
 })
 
-test('개발심의회 레코드가 결재완료(F)이고 납기가 지나면 완료보고 쪽으로 보이고, 진행단계는 미지정부터 새로 시작한다', () => {
-  const record = { ...base(), dueDate: '2020-01-01', notice: '2026-01-20', approval: '2026-01-21' }
+test('개발심의회 레코드가 결재완료(F)이고 납기가 미래(기준일 이후)로 넘어가면, comp* 필드가 비어 있어 미지정부터 새로 시작한다', () => {
+  const record = { ...base(), dueDate: '2026-06-01', notice: '2026-01-20', approval: '2026-01-21' }
   for (const f of CFT_DEPT_FIELDS) record[f.key] = '2026-01-10'
   assert.equal(isCompletionView(record), true)
-  // stageOverride가 없으므로 개발심의회 때의 결재완료(F)를 그대로 들고 오지 않고 미지정(U)부터 시작 —
-  // 다만 납기가 COMPLETION_UNMANAGED_CUTOFF 이전이라 자동완료 규칙에 걸려 결재완료(F)로 보인다.
-  assert.equal(computeStage(record).code, 'F')
+  assert.equal(computeStage(record).code, 'U')
 })
 
-test('완료보고 레코드가 미실시/미지정이고 납기가 관리불필요 기준일 이전이면 결재완료로 간주한다', () => {
-  assert.equal(computeStage({ category: 'completion', stageOverride: 'N', dueDate: '2024-01-01' }).code, 'F')
-  assert.equal(computeStage({ category: 'completion', stageOverride: 'U', dueDate: '2024-01-01' }).code, 'F')
+// 회귀 테스트: 개발심의회 때 쓰던 pmRequest/cftQuality/cftCostAnalysis/notice/approval 필드에
+// 이미 값이 들어있어도, 완료보고 쪽 역산은 이름이 다른 comp* 필드만 보므로 영향을 받지 않아야 한다
+// (실제로 겪은 버그 — 필드 이름이 겹치면 넘어오자마자 결재완료로 보여버림).
+test('개발심의회 필드에 값이 남아있어도 완료보고 쪽 진행단계에는 영향을 주지 않는다(필드 분리 회귀 테스트)', () => {
+  const record = { ...base(), dueDate: '2026-06-01', notice: '2026-01-20', approval: '2026-01-21' }
+  for (const f of CFT_DEPT_FIELDS) record[f.key] = '2026-01-10'
+  assert.equal(computeStage(record).code, 'U', 'review 필드가 가득 차 있어도 comp*가 비어 있으면 미지정')
+  record.compPmRequest = '2026-07-01'
+  assert.equal(computeStage(record).code, 'A', 'comp* 필드를 채우면 그제서야 진행단계가 올라간다')
 })
 
-test('완료보고 레코드가 미실시/미지정이어도 납기가 관리불필요 기준일 이후면 강제하지 않는다', () => {
-  assert.equal(computeStage({ category: 'completion', stageOverride: 'N', dueDate: COMPLETION_UNMANAGED_CUTOFF }).code, 'N')
+test('완료보고 레코드가 미지정이고 납기가 관리불필요 기준일 이전이면 결재완료로 간주한다', () => {
+  assert.equal(computeStage({ category: 'completion', dueDate: '2024-01-01' }).code, 'F')
+  assert.equal(computeStage({ category: 'completion', reviewMethod: '미실시', dueDate: '2024-01-01' }).code, 'F')
 })
 
-test('완료보고 레코드가 미실시/미지정이 아니면(C 등) 납기가 지나도 자동완료하지 않는다', () => {
-  assert.equal(computeStage({ category: 'completion', stageOverride: 'C', dueDate: '2024-01-01' }).code, 'C')
+test('완료보고 레코드가 미지정이어도 납기가 관리불필요 기준일 이후면 강제하지 않는다', () => {
+  assert.equal(computeStage({ category: 'completion', dueDate: COMPLETION_UNMANAGED_CUTOFF }).code, 'U')
+})
+
+test('완료보고 레코드가 미지정이 아니면(C 등) 납기가 지나도 자동완료하지 않는다', () => {
+  const record = {
+    category: 'completion', dueDate: '2024-01-01',
+    compPmRequest: '2020-01-01', compPmComplete: '2020-01-02', compCftRequest: '2020-01-03',
+  }
+  assert.equal(computeStage(record).code, 'C')
 })

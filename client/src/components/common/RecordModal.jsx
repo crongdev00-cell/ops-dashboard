@@ -4,7 +4,7 @@ import StatusBadge from './StatusBadge'
 import InlineText from './InlineText'
 import VerticalStepper from './VerticalStepper'
 import CommentsSection from './CommentsSection'
-import { REVIEW_METHODS, FACE_TO_FACE_SONCHUNGGEUM, COMPLETION_STAGE_OPTIONS, STAGES, isCompletionView } from '../../lib/stage'
+import { REVIEW_METHODS, FACE_TO_FACE_SONCHUNGGEUM, STEP_SEQUENCE, COMPLETION_STEP_SEQUENCE, isCompletionView } from '../../lib/stage'
 import { CLASSIFY_OPTIONS } from '../../lib/businessDivision'
 import { BUSINESS_TYPES } from '../../lib/businessType'
 import { PROJECT_STAGES } from '../../lib/projectStage'
@@ -197,19 +197,12 @@ export default function RecordModal({ record, onClose }) {
         <div className="mb-2 flex items-center justify-between">
           <h3 className="text-sm font-semibold text-ink">진행 단계</h3>
         </div>
-        {isCompletion ? (
-          // 완료보고는 CFT 8개 부서 날짜로 역산하지 않고 엑셀에서 받은(또는 직접 지정한) 단계를
-          // 그대로 쓴다 — VerticalStepper 대신 단순 select.
-          <select
-            value={record.stageOverride ?? 'U'}
-            onChange={(e) => update({ stageOverride: e.target.value })}
-            className="w-full rounded-md border border-line bg-white px-2 py-1.5 text-sm outline-none focus:border-indigo"
-          >
-            {COMPLETION_STAGE_OPTIONS.map((code) => <option key={code} value={code}>{STAGES[code].label}</option>)}
-          </select>
-        ) : (
-          <VerticalStepper record={record} onUpdate={update} />
-        )}
+        <VerticalStepper
+          record={record}
+          onUpdate={update}
+          stepSequence={isCompletion ? COMPLETION_STEP_SEQUENCE : STEP_SEQUENCE}
+          mode={isCompletion ? 'completion' : 'review'}
+        />
 
         <div className="mt-6">
           <p className="mb-1.5 text-xs font-medium text-slate">비고</p>

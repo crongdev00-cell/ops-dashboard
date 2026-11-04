@@ -123,9 +123,13 @@ export function createProject(data) {
     cftAi: null, cftSwTest: null, cftPurchase: null, cftQuality: null, cftCostAnalysis: null, cftMns: null, cftSystemEng: null, cftBizMgmt: null,
     notice: null, approval: null,
     // category: 완료보고(category:'completion')는 개발심의회(reviewMethod+날짜) 워크플로우와 완전히
-    // 분리된 별도 안건 묶음 — computeStage()가 stageOverride를 직접 쓴다. labName/projectStage는
-    // 완료보고 전용 필드.
-    category: 'review', stageOverride: null, labName: null, projectStage: null,
+    // 분리된 별도 안건 묶음 — computeStage()가 comp* 날짜 필드로 역산한다. 개발심의회 레코드가
+    // 완료보고로 "넘어왔을 때" 그 레코드의 pmRequest 등과 이름이 겹치면 넘어오자마자 이미 결재완료로
+    // 보이는 버그가 나므로, 일부러 review 필드와 다른 이름을 쓴다(client/src/lib/stage.js 참고).
+    // labName/projectStage는 완료보고 전용 메타데이터 필드.
+    category: 'review', labName: null, projectStage: null,
+    compPmRequest: null, compPmDue: null, compPmComplete: null, compCftRequest: null,
+    compCftQuality: null, compCftCostAnalysis: null, compNotice: null, compApproval: null,
     // 수기로 직접 만든 안건은 자동판정 대상이 아니라서(포털 데이터가 없음) 확정할 것도 없다 —
     // "심의 대상 확정 필요" 목록에 안 뜨도록 처음부터 확정된 것으로 둔다.
     autoClassification: null, classificationReason: null, classificationConfirmed: true, isSonchunggeum: false,
@@ -464,13 +468,10 @@ export function importCompletionReport(rows) {
       labName: row.labName ?? null, pm: row.pm ?? null, deptName: row.deptName ?? null, bm: row.bm ?? null,
       businessDivision: null,
       reviewMethod, chair: null, reviewDate: null, reviewResult: null, reviewContent: null,
-      pmRequest: row.pmRequest ?? null, pmDue: row.pmDue ?? null, pmComplete: row.pmComplete ?? null,
-      cftRequest: row.cftRequest ?? null,
-      cftAi: null, cftSwTest: null, cftPurchase: null,
-      cftQuality: row.cftQuality ?? null, cftCostAnalysis: row.cftCostAnalysis ?? null,
-      cftMns: null, cftSystemEng: null, cftBizMgmt: null,
-      notice: row.notice ?? null, approval: row.approval ?? null,
-      stageOverride: row.stageOverride ?? 'U',
+      compPmRequest: row.compPmRequest ?? null, compPmDue: row.compPmDue ?? null, compPmComplete: row.compPmComplete ?? null,
+      compCftRequest: row.compCftRequest ?? null,
+      compCftQuality: row.compCftQuality ?? null, compCftCostAnalysis: row.compCftCostAnalysis ?? null,
+      compNotice: row.compNotice ?? null, compApproval: row.compApproval ?? null,
       autoClassification: null, classificationReason: null, classificationConfirmed: true, isSonchunggeum: false,
       createdAt: now, updatedAt: now,
     }
